@@ -13,7 +13,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open [http://localhost:8000](http://localhost:8000) in your browser. The UI is ready once the health-check turns green (about 30 s).
+Open [http://localhost:8000](http://localhost:8000) in your browser (or whichever port you set via `SERVER_PORT`). The UI is ready once the health-check turns green (about 30 s).
 
 ## Persisting data
 
@@ -63,10 +63,10 @@ docker compose down -v
 
 ## Changing the port
 
-Set `SERVER_PORT` in your `.env` file:
+Set `SERVER_PORT` in your `.env` file (useful if port 8000 is already in use):
 
 ```env
-SERVER_PORT=9000
+SERVER_PORT=8765
 ```
 
 Then restart: `docker compose up -d`.
