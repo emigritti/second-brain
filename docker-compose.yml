@@ -1,0 +1,22 @@
+services:
+  brain:
+    build: .
+    image: second-brain:local
+    ports:
+      - "${SERVER_PORT:-8000}:8000"
+    env_file:
+      - .env
+    volumes:
+      - brain-store:/app/store
+      - brain-raw:/app/raw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  brain-store:
+  brain-raw:

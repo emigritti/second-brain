@@ -36,3 +36,37 @@ Second Brain is a local-first, AI-powered Zettelkasten system designed to ingest
 ### 6. MCP Server (`brain/mcp.py`)
 - Implements the Model Context Protocol using `mcp.server.fastmcp`.
 - Allows external AI assistants (like Claude Desktop) to hook into the Second Brain's search, graph, and ingestion tools.
+
+## Deployment
+
+### Docker (recommended)
+
+The application ships as a single Docker container. See [docs/how-to/run-with-docker.md](how-to/run-with-docker.md) for the quick-start guide.
+
+**Container layout:**
+
+| Path in container | Role |
+|---|---|
+| `/app/brain/` | Application source |
+| `/app/static/` | Web UI assets |
+| `/app/templates/` | Jinja2 templates |
+| `/app/raw/` | PDF staging area (watchdog input) — backed by `brain-raw` volume |
+| `/app/store/` | All persistent state — backed by `brain-store` volume |
+
+**Named volumes:**
+
+| Volume | Contents |
+|---|---|
+| `brain-store` | `documents/` (Markdown), `chroma/` (embeddings), `images/` (extracted PNGs) |
+| `brain-raw` | PDFs awaiting ingestion |
+
+The container exposes port **8000**. A built-in `HEALTHCHECK` polls the root endpoint every 30 s.
+
+### Local (development)
+
+```bash
+pip install -r requirements.txt
+python -m brain.app
+```
+
+Required environment variable: `ANTHROPIC_API_KEY`.
