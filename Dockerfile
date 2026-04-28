@@ -24,6 +24,10 @@ COPY templates/ templates/
 
 RUN mkdir -p raw store/documents store/images store/chroma
 
+# Pre-download the ChromaDB ONNX embedding model at build time
+# so it's baked into the image and never downloaded at runtime
+RUN python -c "from chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2 import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()([ 'warmup'])"
+
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
