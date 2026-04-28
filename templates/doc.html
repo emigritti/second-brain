@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}Doc: {{ slug }}{% endblock %}
+
+{% block content %}
+<div class="document-content">
+    {{ content | safe }}
+</div>
+{% endblock %}
