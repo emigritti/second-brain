@@ -3,7 +3,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 from typing import List, Tuple
 
-CHROMA_DB_DIR = os.path.join(os.path.dirname(__file__), '..', 'store', 'chroma')
+CHROMA_DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'store', 'chroma'))
 
 class BrainIndex:
     def __init__(self):

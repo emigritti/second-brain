@@ -3,7 +3,7 @@ import fitz  # pymupdf
 import pymupdf4llm
 from typing import Tuple, List
 
-IMAGES_STORE_DIR = os.path.join(os.path.dirname(__file__), '..', 'store', 'images')
+IMAGES_STORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'store', 'images'))
 
 def parse_pdf(file_path: str, slug: str) -> Tuple[str, List[str]]:
     """

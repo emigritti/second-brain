@@ -11,8 +11,8 @@ from brain.linker import inject_wikilinks
 from brain.index import BrainIndex
 from brain.graph import BrainGraph
 
-RAW_DIR = os.path.join(os.path.dirname(__file__), '..', 'raw')
-DOCS_DIR = os.path.join(os.path.dirname(__file__), '..', 'store', 'documents')
+RAW_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'raw'))
+DOCS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'store', 'documents'))
 
 def ingest_pdf(file_path: str, brain_graph: BrainGraph, brain_index: BrainIndex):
     """

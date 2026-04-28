@@ -6,7 +6,7 @@ import networkx as nx
 import frontmatter
 from typing import List, Dict, Any
 
-STORE_DIR = os.path.join(os.path.dirname(__file__), '..', 'store', 'documents')
+STORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'store', 'documents'))
 
 class BrainGraph:
     def __init__(self):
