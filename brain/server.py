@@ -44,7 +44,7 @@ class QueryRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
     """Search/Q&A terminal prompt page."""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 @app.post("/query")
 async def handle_query(req: QueryRequest):
@@ -55,7 +55,7 @@ async def handle_query(req: QueryRequest):
 @app.get("/graph", response_class=HTMLResponse)
 async def graph_page(request: Request):
     """Cytoscape.js knowledge graph page."""
-    return templates.TemplateResponse("graph.html", {"request": request})
+    return templates.TemplateResponse(request, "graph.html")
 
 @app.get("/graph/data")
 async def graph_data():
@@ -97,16 +97,12 @@ async def view_document(request: Request, slug: str):
     raw_html = markdown.markdown(md_text, extensions=['fenced_code', 'tables'])
     html_content = nh3.clean(raw_html, tags=_NH3_TAGS, attributes=_NH3_ATTRS)
 
-    return templates.TemplateResponse("doc.html", {
-        "request": request,
-        "slug": slug,
-        "content": html_content
-    })
+    return templates.TemplateResponse(request, "doc.html", {"slug": slug, "content": html_content})
 
 @app.get("/upload", response_class=HTMLResponse)
 async def upload_page(request: Request):
     """Drag-and-drop PDF upload page."""
-    return templates.TemplateResponse("upload.html", {"request": request})
+    return templates.TemplateResponse(request, "upload.html")
 
 @app.post("/upload")
 async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
