@@ -22,7 +22,7 @@ def inject_wikilinks(slug: str, markdown_text: str, existing_slugs: List[str]) -
     try:
         # We use Claude Sonnet for reasoning about links
         response = client.messages.create(
-            model="claude-3-5-sonnet-latest",
+            model="claude-sonnet-4-6",
             max_tokens=4096,
             system="You are an expert knowledge management assistant that helps build an Obsidian-style Zettelkasten. "
                    "Your task is to take a Markdown document and inject [[wikilinks]] referencing other existing documents "

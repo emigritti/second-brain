@@ -30,7 +30,7 @@ def describe_images(image_paths: List[str], slug: str) -> Dict[str, str]:
             
             # Using Claude 3.5 Haiku for fast and cheap vision tasks
             response = client.messages.create(
-                model="claude-3-5-haiku-latest",
+                model="claude-haiku-4-5",
                 max_tokens=300,
                 system=f"You are an expert OCR and image analysis system. Describe the contents of this image extracted from the document '{slug}'. If it is a chart, summarize its data. If it is a diagram, explain its meaning. If it is text, transcribe it. Be concise but thorough.",
                 messages=[

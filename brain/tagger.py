@@ -25,7 +25,7 @@ def extract_tags(markdown_text: str, existing_tags: List[str] = None) -> List[st
     try:
         # Ask Claude to generate a JSON array of 3-7 tags
         response = client.messages.create(
-            model="claude-3-5-haiku-latest",
+            model="claude-haiku-4-5",
             max_tokens=150,
             system="You are an expert taxonomy and tagging system. Read the provided document and return a JSON array of 3 to 7 relevant tags (lowercase, hyphenated if multiple words). Do not include any other text, only the JSON array.",
             messages=[

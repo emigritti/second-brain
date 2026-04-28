@@ -43,7 +43,7 @@ class QueryEngine:
                 # High confidence: answer strictly from context using Haiku (faster, cheaper)
                 print("High confidence. Using Haiku to summarize context.")
                 response = client.messages.create(
-                    model="claude-3-5-haiku-latest",
+                    model="claude-haiku-4-5",
                     max_tokens=1024,
                     system="You are an AI assistant answering questions based STRICTLY on the provided context. "
                            "If the answer is not in the context, say 'I cannot answer this based on the current context.' "
@@ -59,7 +59,7 @@ class QueryEngine:
                 # Low confidence: escalate to Sonnet for deeper reasoning
                 print("Low confidence. Escalating to Sonnet for deep reasoning.")
                 response = client.messages.create(
-                    model="claude-3-5-sonnet-latest",
+                    model="claude-sonnet-4-6",
                     max_tokens=2048,
                     system="You are an expert AI assistant. The user is asking a question about their knowledge base. "
                            "The provided context might be loosely related or incomplete. "
