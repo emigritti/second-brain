@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Second Brain{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div>
+            <strong>[SYSTEM]</strong> SECOND BRAIN TERMINAL
+        </div>
+        <nav>
+            <a href="/">[TERMINAL]</a>
+            <a href="/graph">[GRAPH]</a>
+            <a href="/upload">[UPLOAD]</a>
+        </nav>
+    </header>
+    
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

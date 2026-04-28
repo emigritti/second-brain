@@ -1,0 +1,170 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+
+:root {
+  --bg-color: #0d0d0d;
+  --phosphor-green: #33ff33;
+  --phosphor-dim: #115511;
+  --glow: 0 0 10px rgba(51, 255, 51, 0.7);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--phosphor-green);
+  font-family: 'Share Tech Mono', monospace;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  text-shadow: var(--glow);
+}
+
+/* CRT Scanline Overlay */
+body::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 999;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+/* Base styles */
+a {
+  color: var(--phosphor-green);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--phosphor-dim);
+}
+
+a:hover {
+  background-color: var(--phosphor-green);
+  color: var(--bg-color);
+}
+
+header {
+  padding: 20px;
+  border-bottom: 2px solid var(--phosphor-dim);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+nav a {
+  margin-left: 20px;
+  font-size: 1.2rem;
+}
+
+main {
+  flex-grow: 1;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Terminal Input */
+.terminal-input-container {
+  display: flex;
+  align-items: center;
+  margin-top: 50px;
+}
+
+.prompt {
+  margin-right: 10px;
+  font-size: 1.5rem;
+}
+
+input[type="text"] {
+  background: transparent;
+  border: none;
+  color: var(--phosphor-green);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.5rem;
+  outline: none;
+  flex-grow: 1;
+  text-shadow: var(--glow);
+}
+
+/* Blinking Cursor */
+.cursor {
+  display: inline-block;
+  width: 12px;
+  height: 1.5rem;
+  background-color: var(--phosphor-green);
+  animation: blink 1s step-end infinite;
+  vertical-align: bottom;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Output Area */
+#output {
+  margin-top: 40px;
+  white-space: pre-wrap;
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+.source-link {
+  font-size: 0.9rem;
+  color: #88ff88;
+  margin-right: 10px;
+}
+
+/* Upload Area */
+.drop-zone {
+  border: 2px dashed var(--phosphor-green);
+  border-radius: 5px;
+  padding: 50px;
+  text-align: center;
+  margin-top: 50px;
+  transition: all 0.3s;
+}
+
+.drop-zone.dragover {
+  background-color: rgba(51, 255, 51, 0.2);
+}
+
+/* Graph Container */
+#cy {
+  width: 100%;
+  height: calc(100vh - 80px);
+  position: absolute;
+  top: 80px;
+  left: 0;
+}
+
+/* Document Viewer */
+.document-content {
+  background: rgba(0, 20, 0, 0.5);
+  padding: 30px;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: 5px;
+  margin-top: 20px;
+}
+
+.document-content h1, .document-content h2, .document-content h3 {
+  color: #aaffaa;
+}
+
+.document-content blockquote {
+  border-left: 4px solid var(--phosphor-green);
+  padding-left: 15px;
+  color: #88cc88;
+  font-style: italic;
+}
+
+.document-content img {
+  max-width: 100%;
+  border: 2px solid var(--phosphor-dim);
+}

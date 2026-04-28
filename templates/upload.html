@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>[ UPLOAD DOCUMENT ]</h2>
+
+<div class="drop-zone" id="drop-zone">
+    DRAG AND DROP PDF HERE<br><br>
+    OR CLICK TO BROWSE
+    <input type="file" id="file-input" accept=".pdf" style="display: none;">
+</div>
+
+<div id="upload-status" style="margin-top: 20px;"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const status = document.getElementById('upload-status');
+    
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        
+        if (e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+    
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+            handleFile(fileInput.files[0]);
+        }
+    });
+    
+    async function handleFile(file) {
+        if (!file.name.endsWith('.pdf')) {
+            status.innerHTML = '<span style="color: red;">ERROR: ONLY PDFS ACCEPTED.</span>';
+            return;
+        }
+        
+        status.innerHTML = 'UPLOADING AND TRIGGERING INGESTION...';
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                status.innerHTML = `<span style="color: #33ff33;">SUCCESS: ${data.status}</span>`;
+            } else {
+                status.innerHTML = `<span style="color: red;">ERROR: ${data.message || 'UPLOAD FAILED'}</span>`;
+            }
+        } catch (err) {
+            status.innerHTML = `<span style="color: red;">ERROR: ${err.message}</span>`;
+        }
+    }
+});
+</script>
+{% endblock %}

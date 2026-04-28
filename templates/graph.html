@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<!-- Cytoscape JS from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div id="cy"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/graph.js"></script>
+{% endblock %}
