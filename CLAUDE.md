@@ -138,12 +138,15 @@ Exposes the brain as an MCP server so Claude Code (or any MCP client) can query 
 ### Web UI
 
 - **Framework**: FastAPI + Jinja2 templates
-- **Aesthetic**: phosphor green (#33ff33) or amber (#ffb000) on black; CRT scanline overlay via CSS; VT323 / Share Tech Mono fonts; all UI elements styled as terminal widgets
+- **Aesthetic**: Terminal CLI — phosphor green (`#33ff33`) on OLED black (`#050505`); amber (`#ffb000`) accents; subtle CRT scanline overlay (CSS `::after`, 0.07 opacity); JetBrains Mono as primary font, VT323 for display headers
+- **Design tokens**: all colors, spacing (4px base), typography scale, animation durations, and glow values live in CSS custom properties on `:root` in `static/style.css`
+- **Accessibility**: skip link, ARIA landmarks (`role="banner/navigation/main"`), `aria-current="page"` on active nav link, `aria-live="polite"` on terminal output and upload status, `prefers-reduced-motion` respected for all animations, visible focus rings (2px solid `--fg`)
+- **Responsive**: mobile-first; hamburger nav below 640px; font sizes and padding adjust at breakpoint
 - **Pages**:
-  - `/` — search/Q&A terminal prompt
-  - `/graph` — Cytoscape.js interactive knowledge graph
-  - `/doc/<slug>` — rendered Markdown document viewer
-  - `/upload` — drag-and-drop document ingest UI (retro file-selector aesthetic); accepts all supported formats
+  - `/` — search/Q&A terminal prompt; `role="log"` output div; command history (↑/↓); Escape to clear; typewriter answer reveal; safe DOM construction (no `innerHTML` for user-influenced content)
+  - `/graph` — Cytoscape.js knowledge graph; edge type coloring (wikilink=green, tag=amber, semantic=cyan); node search filter; zoom controls; node info sidebar; graph legend; empty state when no docs indexed; full-bleed layout (`main.full-bleed`)
+  - `/doc/<slug>` — rendered Markdown; breadcrumb nav (`← TERMINAL / GRAPH / slug`); `article` landmark
+  - `/upload` — drag-and-drop with animated progress bar; ARIA-labelled drop zone; upload state classes (`success`/`error`/`info`)
 
 ---
 
