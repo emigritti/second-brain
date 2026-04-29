@@ -5,16 +5,17 @@ Second Brain is a local-first, AI-powered Zettelkasten system designed to ingest
 ## Core Design Principles
 
 1. **Local-First & Obsidian Compatible**: The absolute source of truth is the `store/documents/` folder. Documents are plain Markdown files with YAML frontmatter. There is no SQL database locking your notes in.
-2. **AI Enrichment**: The system relies on Anthropic's Claude APIs to automatically categorize, tag, describe images, and inject semantic links between documents.
+2. **AI Enrichment**: The system uses a pluggable LLM backend (`brain/llm.py`) supporting both Anthropic Claude and local Ollama models. Vision and query escalation use Anthropic exclusively; tagging and wikilink injection are configurable per-task via the `/settings` page.
 3. **Hybrid Retrieval**: Search relies on a multi-stage pipeline combining keyword match (BM25), vector similarity (ChromaDB), and graph topology (NetworkX).
 
 ## Component Stack
 
 ### 1. Ingestion Pipeline (`brain/ingest.py`)
 - **Parser (`parser.py`)**: Uses `pymupdf4llm` to chunk and parse massive PDFs into Markdown and extract images into `store/images/`.
-- **Vision (`vision.py`)**: Uses `claude-3-5-haiku-latest` to analyze extracted images and append contextual descriptions.
-- **Tagger (`tagger.py`)**: Uses `claude-3-5-haiku-latest` to read document text and generate a structured JSON taxonomy (tags). Short-circuits if tags already exist in the file.
-- **Linker (`linker.py`)**: Uses `claude-3-5-sonnet-latest` to semantically inject `[[wikilinks]]` into the text, linking the new document to the existing knowledge graph.
+- **Vision (`vision.py`)**: Uses `claude-haiku-4-5` to analyze extracted images and append contextual descriptions.
+- **Tagger (`tagger.py`)**: Generates a structured JSON taxonomy (3–7 tags). Short-circuits if tags already exist in the file. Delegates to `brain/llm.py` — configurable as Anthropic or Ollama.
+- **Linker (`linker.py`)**: Semantically injects `[[wikilinks]]` into the text linking to existing documents. Delegates to `brain/llm.py` — configurable as Anthropic or Ollama.
+- **LLM Provider (`llm.py`)**: Central dispatcher. Reads `store/config.json` on each call. Routes to Ollama first if configured; falls back to Anthropic on failure and records a warning in `INGEST_LOG`.
 
 ### 2. Knowledge Graph (`brain/graph.py`)
 - Built on `NetworkX DiGraph`.
@@ -32,6 +33,7 @@ Second Brain is a local-first, AI-powered Zettelkasten system designed to ingest
 - Built on `FastAPI`.
 - Uses Jinja2 templates and vanilla JS/CSS for a retro CRT terminal aesthetic.
 - Includes `Cytoscape.js` for rendering the knowledge graph visually.
+- `/settings` page allows runtime configuration of LLM backends, model names, and temperatures without restarting the server. Configuration is persisted in `store/config.json`.
 
 ### 6. MCP Server (`brain/mcp.py`)
 - Implements the Model Context Protocol using `mcp.server.fastmcp`.
@@ -70,3 +72,23 @@ python -m brain.app
 ```
 
 Required environment variable: `ANTHROPIC_API_KEY`.
+
+### LLM Configuration
+
+Model backends for tagging and wikilink injection are configurable at runtime via `/settings`. Configuration is stored in `store/config.json` and takes effect immediately (no restart needed).
+
+| Task | Default backend | Recommended local model |
+|---|---|---|
+| Tagger | Anthropic `claude-haiku-4-5` | `qwen2.5:7b` (Q4, ~5 GB) |
+| Linker | Anthropic `claude-sonnet-4-6` | `gemma3:27b` (Q4, ~16 GB) |
+
+To use local models, install [Ollama](https://ollama.com) natively on macOS (not inside Docker — Docker on Mac cannot access Metal GPU):
+
+```bash
+brew install ollama
+ollama pull qwen2.5:7b
+ollama pull gemma3:27b
+ollama serve   # starts at http://localhost:11434
+```
+
+Then open `/settings` in the UI, select the Ollama backend for each task, and save.

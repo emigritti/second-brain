@@ -12,8 +12,9 @@ from brain.graph import BrainGraph
 from brain.index import BrainIndex
 from brain.search import BrainSearch
 from brain.query import QueryEngine
-from brain.ingest import ingest_document
+from brain.ingest import ingest_document, INGEST_LOG
 from brain.parser import MARKITDOWN_EXTENSIONS
+from brain import llm
 
 UPLOAD_EXTENSIONS = {'.pdf'} | MARKITDOWN_EXTENSIONS
 
@@ -101,6 +102,57 @@ async def view_document(request: Request, slug: str):
     html_content = nh3.clean(raw_html, tags=_NH3_TAGS, attributes=_NH3_ATTRS)
 
     return templates.TemplateResponse(request, "doc.html", {"slug": slug, "content": html_content})
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """LLM backend configuration page."""
+    config = llm.load_config()
+    return templates.TemplateResponse(request, "settings.html", {"config": config})
+
+
+@app.post("/settings")
+async def save_settings(request: Request):
+    """Persist LLM configuration to store/config.json."""
+    form = await request.form()
+    try:
+        config = {
+            "ollama_base_url": str(form.get("ollama_base_url", llm.DEFAULT_CONFIG["ollama_base_url"])).strip(),
+            "tagger": {
+                "backend": str(form.get("tagger_backend", "anthropic")),
+                "ollama_model": str(form.get("tagger_ollama_model", llm.DEFAULT_CONFIG["tagger"]["ollama_model"])).strip(),
+                "anthropic_model": str(form.get("tagger_anthropic_model", llm.DEFAULT_CONFIG["tagger"]["anthropic_model"])).strip(),
+                "temperature": float(form.get("tagger_temperature", llm.DEFAULT_CONFIG["tagger"]["temperature"])),
+            },
+            "linker": {
+                "backend": str(form.get("linker_backend", "anthropic")),
+                "ollama_model": str(form.get("linker_ollama_model", llm.DEFAULT_CONFIG["linker"]["ollama_model"])).strip(),
+                "anthropic_model": str(form.get("linker_anthropic_model", llm.DEFAULT_CONFIG["linker"]["anthropic_model"])).strip(),
+                "temperature": float(form.get("linker_temperature", llm.DEFAULT_CONFIG["linker"]["temperature"])),
+            },
+        }
+        llm.save_config(config)
+        return JSONResponse({"status": "saved"})
+    except (ValueError, TypeError) as e:
+        return JSONResponse(status_code=400, content={"error": f"Invalid value: {e}"})
+
+
+@app.post("/settings/test-ollama")
+async def test_ollama_connection(request: Request):
+    """Ping Ollama and return available model names."""
+    data = await request.json()
+    base_url = str(data.get("base_url", "http://localhost:11434")).strip()
+    try:
+        models = llm.list_ollama_models(base_url)
+        return JSONResponse({"ok": True, "models": models})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+
+
+@app.get("/ingest/log")
+async def ingest_log():
+    """Return recent ingestion events including any LLM fallback warnings."""
+    return JSONResponse(list(INGEST_LOG))
+
 
 @app.get("/upload", response_class=HTMLResponse)
 async def upload_page(request: Request):

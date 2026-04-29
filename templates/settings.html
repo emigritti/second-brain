@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — Second Brain{% endblock %}
+
+{% block content %}
+<h2 class="settings-header">[ LLM CONFIGURATION ]</h2>
+
+<form id="settings-form" class="settings-form" onsubmit="return false;">
+
+    <!-- ── Ollama connection ─────────────────────────── -->
+    <section class="settings-section">
+        <h3 class="settings-section-title">OLLAMA CONNECTION</h3>
+
+        <div class="settings-row">
+            <label class="settings-label" for="ollama_base_url">BASE URL</label>
+            <div class="settings-field-group">
+                <input class="settings-input"
+                       type="text"
+                       id="ollama_base_url"
+                       name="ollama_base_url"
+                       value="{{ config.ollama_base_url }}"
+                       placeholder="http://localhost:11434"
+                       spellcheck="false"
+                       autocomplete="off">
+                <button class="settings-btn settings-btn--secondary"
+                        type="button"
+                        id="btn-test-ollama">TEST CONNECTION</button>
+            </div>
+        </div>
+
+        <div id="ollama-test-result" class="settings-test-result" aria-live="polite"></div>
+    </section>
+
+    <!-- ── Tagger ────────────────────────────────────── -->
+    <section class="settings-section">
+        <h3 class="settings-section-title">TAGGER
+            <span class="settings-section-sub">brain/tagger.py — runs once per ingested document</span>
+        </h3>
+
+        <div class="settings-row">
+            <label class="settings-label">BACKEND</label>
+            <div class="settings-backend-toggle" role="group" aria-label="Tagger backend">
+                <label class="settings-radio-label">
+                    <input type="radio" name="tagger_backend" value="anthropic"
+                           {% if config.tagger.backend == 'anthropic' %}checked{% endif %}>
+                    <span>ANTHROPIC</span>
+                </label>
+                <label class="settings-radio-label">
+                    <input type="radio" name="tagger_backend" value="ollama"
+                           {% if config.tagger.backend == 'ollama' %}checked{% endif %}>
+                    <span>OLLAMA</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-row settings-conditional" data-task="tagger" data-backend="anthropic">
+            <label class="settings-label" for="tagger_anthropic_model">ANTHROPIC MODEL</label>
+            <input class="settings-input"
+                   type="text"
+                   id="tagger_anthropic_model"
+                   name="tagger_anthropic_model"
+                   value="{{ config.tagger.anthropic_model }}"
+                   placeholder="claude-haiku-4-5"
+                   spellcheck="false">
+        </div>
+
+        <div class="settings-row settings-conditional" data-task="tagger" data-backend="ollama">
+            <label class="settings-label" for="tagger_ollama_model">OLLAMA MODEL</label>
+            <input class="settings-input"
+                   type="text"
+                   id="tagger_ollama_model"
+                   name="tagger_ollama_model"
+                   value="{{ config.tagger.ollama_model }}"
+                   placeholder="qwen2.5:7b"
+                   spellcheck="false">
+        </div>
+
+        <div class="settings-row">
+            <label class="settings-label" for="tagger_temperature">TEMPERATURE</label>
+            <input class="settings-input settings-input--narrow"
+                   type="number"
+                   id="tagger_temperature"
+                   name="tagger_temperature"
+                   value="{{ config.tagger.temperature }}"
+                   min="0" max="1" step="0.05">
+        </div>
+    </section>
+
+    <!-- ── Linker ────────────────────────────────────── -->
+    <section class="settings-section">
+        <h3 class="settings-section-title">LINKER
+            <span class="settings-section-sub">brain/linker.py — injects [[wikilinks]] on each ingestion</span>
+        </h3>
+
+        <div class="settings-row">
+            <label class="settings-label">BACKEND</label>
+            <div class="settings-backend-toggle" role="group" aria-label="Linker backend">
+                <label class="settings-radio-label">
+                    <input type="radio" name="linker_backend" value="anthropic"
+                           {% if config.linker.backend == 'anthropic' %}checked{% endif %}>
+                    <span>ANTHROPIC</span>
+                </label>
+                <label class="settings-radio-label">
+                    <input type="radio" name="linker_backend" value="ollama"
+                           {% if config.linker.backend == 'ollama' %}checked{% endif %}>
+                    <span>OLLAMA</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-row settings-conditional" data-task="linker" data-backend="anthropic">
+            <label class="settings-label" for="linker_anthropic_model">ANTHROPIC MODEL</label>
+            <input class="settings-input"
+                   type="text"
+                   id="linker_anthropic_model"
+                   name="linker_anthropic_model"
+                   value="{{ config.linker.anthropic_model }}"
+                   placeholder="claude-sonnet-4-6"
+                   spellcheck="false">
+        </div>
+
+        <div class="settings-row settings-conditional" data-task="linker" data-backend="ollama">
+            <label class="settings-label" for="linker_ollama_model">OLLAMA MODEL</label>
+            <input class="settings-input"
+                   type="text"
+                   id="linker_ollama_model"
+                   name="linker_ollama_model"
+                   value="{{ config.linker.ollama_model }}"
+                   placeholder="gemma3:27b"
+                   spellcheck="false">
+        </div>
+
+        <div class="settings-row">
+            <label class="settings-label" for="linker_temperature">TEMPERATURE</label>
+            <input class="settings-input settings-input--narrow"
+                   type="number"
+                   id="linker_temperature"
+                   name="linker_temperature"
+                   value="{{ config.linker.temperature }}"
+                   min="0" max="1" step="0.05">
+        </div>
+    </section>
+
+    <!-- ── Save ─────────────────────────────────────── -->
+    <div class="settings-save-row">
+        <button class="settings-btn settings-btn--primary" type="button" id="btn-save">
+            SAVE CONFIGURATION
+        </button>
+        <div id="save-status"
+             class="settings-save-status"
+             role="status"
+             aria-live="polite"
+             aria-atomic="true"></div>
+    </div>
+
+</form>
+
+<!-- ── Ingestion log ─────────────────────────────── -->
+<section class="settings-section settings-log-section">
+    <h3 class="settings-section-title">
+        RECENT INGESTION LOG
+        <button class="settings-btn settings-btn--ghost" type="button" id="btn-refresh-log">↺ REFRESH</button>
+    </h3>
+    <div id="ingest-log"
+         class="settings-log"
+         role="log"
+         aria-live="polite"
+         aria-label="Recent ingestion events">
+        <span class="settings-log-empty">No ingestion events yet.</span>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+
+  // ── Backend toggle: show/hide model rows ────────────────────
+  function applyVisibility(task, backend) {
+    document.querySelectorAll('.settings-conditional[data-task="' + task + '"]')
+      .forEach(function (row) {
+        row.classList.toggle('hidden', row.dataset.backend !== backend);
+      });
+  }
+
+  ['tagger', 'linker'].forEach(function (task) {
+    document.querySelectorAll('input[name="' + task + '_backend"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        applyVisibility(task, radio.value);
+      });
+    });
+    var checked = document.querySelector('input[name="' + task + '_backend"]:checked');
+    if (checked) applyVisibility(task, checked.value);
+  });
+
+  // ── Test Ollama connection ──────────────────────────────────
+  var testBtn = document.getElementById('btn-test-ollama');
+  var testResult = document.getElementById('ollama-test-result');
+
+  testBtn.addEventListener('click', async function () {
+    var url = document.getElementById('ollama_base_url').value.trim();
+    testResult.textContent = 'CONNECTING...';
+    testResult.className = 'settings-test-result info';
+    try {
+      var res = await fetch('/settings/test-ollama', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base_url: url }),
+      });
+      var data = await res.json();
+      if (data.ok) {
+        testResult.textContent = 'CONNECTED — ' + data.models.length + ' model(s) available: ' + data.models.join(', ');
+        testResult.className = 'settings-test-result success';
+      } else {
+        testResult.textContent = 'ERROR: ' + data.error;
+        testResult.className = 'settings-test-result error';
+      }
+    } catch (err) {
+      testResult.textContent = 'ERROR: ' + err.message;
+      testResult.className = 'settings-test-result error';
+    }
+  });
+
+  // ── Save configuration ──────────────────────────────────────
+  var saveBtn = document.getElementById('btn-save');
+  var saveStatus = document.getElementById('save-status');
+
+  saveBtn.addEventListener('click', async function () {
+    saveStatus.textContent = 'SAVING...';
+    saveStatus.className = 'settings-save-status info';
+    try {
+      var form = document.getElementById('settings-form');
+      var body = new FormData(form);
+      var res = await fetch('/settings', { method: 'POST', body: body });
+      var data = await res.json();
+      if (res.ok) {
+        saveStatus.textContent = 'SAVED.';
+        saveStatus.className = 'settings-save-status success';
+      } else {
+        saveStatus.textContent = 'ERROR: ' + (data.error || 'Save failed.');
+        saveStatus.className = 'settings-save-status error';
+      }
+    } catch (err) {
+      saveStatus.textContent = 'ERROR: ' + err.message;
+      saveStatus.className = 'settings-save-status error';
+    }
+  });
+
+  // ── Ingestion log ───────────────────────────────────────────
+  var logEl = document.getElementById('ingest-log');
+
+  async function refreshLog() {
+    try {
+      var res = await fetch('/ingest/log');
+      var events = await res.json();
+      logEl.innerHTML = '';
+      if (!events.length) {
+        var empty = document.createElement('span');
+        empty.className = 'settings-log-empty';
+        empty.textContent = 'No ingestion events yet.';
+        logEl.appendChild(empty);
+        return;
+      }
+      events.forEach(function (ev) {
+        var row = document.createElement('div');
+        row.className = 'log-row' + (ev.warnings && ev.warnings.length ? ' log-row--warn' : '');
+
+        var meta = document.createElement('span');
+        meta.className = 'log-meta';
+        meta.textContent = ev.ts + '  ' + ev.slug;
+        row.appendChild(meta);
+
+        if (ev.warnings && ev.warnings.length) {
+          ev.warnings.forEach(function (w) {
+            var warn = document.createElement('span');
+            warn.className = 'log-warning';
+            warn.textContent = '⚠ ' + w.msg;
+            row.appendChild(warn);
+          });
+        }
+        logEl.appendChild(row);
+      });
+    } catch (err) {
+      logEl.textContent = 'Failed to load log: ' + err.message;
+    }
+  }
+
+  document.getElementById('btn-refresh-log').addEventListener('click', refreshLog);
+  refreshLog();
+})();
+</script>
+{% endblock %}

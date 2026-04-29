@@ -37,6 +37,10 @@
                {% if request.url.path == '/upload' %}aria-current="page"{% endif %}>
                 [UPLOAD]
             </a>
+            <a href="/settings"
+               {% if request.url.path == '/settings' %}aria-current="page"{% endif %}>
+                [SETTINGS]
+            </a>
         </nav>
     </header>
 
