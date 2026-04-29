@@ -4,9 +4,10 @@
 <h2>[ UPLOAD DOCUMENT ]</h2>
 
 <div class="drop-zone" id="drop-zone">
-    DRAG AND DROP PDF HERE<br><br>
-    OR CLICK TO BROWSE
-    <input type="file" id="file-input" accept=".pdf" style="display: none;">
+    DRAG AND DROP FILE HERE<br><br>
+    OR CLICK TO BROWSE<br>
+    <small style="opacity:0.6;">PDF · DOCX · XLSX · PPTX · HTML · EPUB · MD · CSV · MP3 · ZIP</small>
+    <input type="file" id="file-input" accept=".pdf,.docx,.xlsx,.xls,.pptx,.html,.htm,.xml,.csv,.json,.epub,.md,.mp3,.wav,.m4a,.zip" style="display: none;">
 </div>
 
 <div id="upload-status" style="margin-top: 20px;"></div>
@@ -46,9 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    const ACCEPTED_EXTENSIONS = new Set([
+        '.pdf','.docx','.xlsx','.xls','.pptx',
+        '.html','.htm','.xml','.csv','.json',
+        '.epub','.md','.mp3','.wav','.m4a','.zip'
+    ]);
+
     async function handleFile(file) {
-        if (!file.name.endsWith('.pdf')) {
-            status.innerHTML = '<span style="color: red;">ERROR: ONLY PDFS ACCEPTED.</span>';
+        const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+        if (!ACCEPTED_EXTENSIONS.has(ext)) {
+            status.innerHTML = `<span style="color: red;">ERROR: UNSUPPORTED FILE TYPE (${ext || 'unknown'}).</span>`;
             return;
         }
         

@@ -12,7 +12,10 @@ from brain.graph import BrainGraph
 from brain.index import BrainIndex
 from brain.search import BrainSearch
 from brain.query import QueryEngine
-from brain.ingest import ingest_pdf
+from brain.ingest import ingest_document
+from brain.parser import MARKITDOWN_EXTENSIONS
+
+UPLOAD_EXTENSIONS = {'.pdf'} | MARKITDOWN_EXTENSIONS
 
 app = FastAPI(title="Second Brain Terminal")
 
@@ -106,21 +109,22 @@ async def upload_page(request: Request):
 
 @app.post("/upload")
 async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    """Save PDF to raw/, trigger ingest in background, return status."""
+    """Save uploaded file to raw/, trigger ingest in background, return status."""
     safe_name = os.path.basename(file.filename or "")
-    if not safe_name.lower().endswith('.pdf'):
-        return JSONResponse(status_code=400, content={"message": "Only PDFs are allowed."})
+    ext = os.path.splitext(safe_name)[1].lower()
+    if ext not in UPLOAD_EXTENSIONS:
+        return JSONResponse(status_code=400, content={"message": f"Unsupported file type: {ext or '(none)'}"})
 
     candidate = os.path.realpath(os.path.join(RAW_DIR, safe_name))
     if not candidate.startswith(os.path.realpath(RAW_DIR) + os.sep):
         return JSONResponse(status_code=400, content={"message": "Invalid filename."})
 
     file_path = candidate
-    
+
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-        
+
     # Trigger ingest in background
-    background_tasks.add_task(ingest_pdf, file_path, brain_graph, brain_index)
-    
+    background_tasks.add_task(ingest_document, file_path, brain_graph, brain_index)
+
     return {"filename": file.filename, "status": "Ingestion started in background"}
