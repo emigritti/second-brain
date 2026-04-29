@@ -10,16 +10,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from brain.server import app, RAW_DIR, brain_graph, brain_index
-from brain.ingest import ingest_pdf
+from brain.ingest import ingest_document
+from brain.parser import MARKITDOWN_EXTENSIONS
 
-class PDFHandler(FileSystemEventHandler):
+WATCHED_EXTENSIONS = {'.pdf'} | MARKITDOWN_EXTENSIONS
+
+class DocumentHandler(FileSystemEventHandler):
     def on_created(self, event):
-        if not event.is_directory and event.src_path.endswith('.pdf'):
-            print(f"[Watchdog] New PDF detected: {event.src_path}")
+        ext = os.path.splitext(event.src_path)[1].lower()
+        if not event.is_directory and ext in WATCHED_EXTENSIONS:
+            print(f"[Watchdog] New file detected: {event.src_path}")
             try:
-                # Add a small delay to ensure file is fully written before reading
+                # Small delay to ensure file is fully written before reading
                 time.sleep(2)
-                ingest_pdf(event.src_path, brain_graph, brain_index)
+                ingest_document(event.src_path, brain_graph, brain_index)
             except Exception as e:
                 print(f"[Watchdog] Failed to auto-ingest {event.src_path}: {e}")
 
@@ -28,12 +32,12 @@ def start_watchdog():
     if not os.path.exists(RAW_DIR):
         os.makedirs(RAW_DIR)
         
-    event_handler = PDFHandler()
+    event_handler = DocumentHandler()
     observer = Observer()
     observer.schedule(event_handler, path=RAW_DIR, recursive=False)
     observer.start()
-    
-    print(f"[*] Watchdog started. Monitoring {RAW_DIR} for new PDFs...")
+
+    print(f"[*] Watchdog started. Monitoring {RAW_DIR} for new files...")
     
     try:
         while True:

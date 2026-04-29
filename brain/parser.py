@@ -5,6 +5,12 @@ from typing import Tuple, List
 
 IMAGES_STORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'store', 'images'))
 
+MARKITDOWN_EXTENSIONS = {
+    '.docx', '.xlsx', '.xls', '.pptx',
+    '.html', '.htm', '.xml', '.csv', '.json',
+    '.epub', '.md', '.mp3', '.wav', '.m4a', '.zip'
+}
+
 def parse_pdf(file_path: str, slug: str) -> Tuple[str, List[str]]:
     """
     Parse a PDF file, convert to Markdown, and extract images.
@@ -58,3 +64,20 @@ def parse_pdf(file_path: str, slug: str) -> Tuple[str, List[str]]:
     full_markdown = "\n\n".join(markdown_chunks)
     
     return full_markdown, extracted_image_paths
+
+
+def parse_document(file_path: str, slug: str) -> Tuple[str, List[str]]:
+    """Format-agnostic entry point. Routes PDFs to pymupdf4llm (preserving image
+    extraction) and all other formats to MarkItDown."""
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext == '.pdf':
+        return parse_pdf(file_path, slug)
+    if ext in MARKITDOWN_EXTENSIONS:
+        return _parse_with_markitdown(file_path), []
+    raise ValueError(f"Unsupported file type: {ext}")
+
+
+def _parse_with_markitdown(file_path: str) -> str:
+    from markitdown import MarkItDown
+    result = MarkItDown(enable_plugins=False).convert(file_path)
+    return result.text_content or ""
