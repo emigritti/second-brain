@@ -67,22 +67,26 @@
     // Node search / filter
     var searchInput = document.getElementById('graph-search');
     if (searchInput) {
+      var searchTimer = null;
       searchInput.addEventListener('input', function () {
-        var q = searchInput.value.trim().toLowerCase();
-        if (!q) {
-          cy.nodes().removeClass('dim highlighted');
-          cy.edges().removeClass('dim');
-          return;
-        }
-        cy.nodes().forEach(function (node) {
-          var title = String(node.data('title') || node.id()).toLowerCase();
-          if (title.includes(q)) {
-            node.removeClass('dim').addClass('highlighted');
-          } else {
-            node.addClass('dim').removeClass('highlighted');
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () {
+          var q = searchInput.value.trim().toLowerCase();
+          if (!q) {
+            cy.nodes().removeClass('dim highlighted');
+            cy.edges().removeClass('dim');
+            return;
           }
-        });
-        cy.edges().addClass('dim');
+          cy.nodes().forEach(function (node) {
+            var title = String(node.data('title') || node.id()).toLowerCase();
+            if (title.includes(q)) {
+              node.removeClass('dim').addClass('highlighted');
+            } else {
+              node.addClass('dim').removeClass('highlighted');
+            }
+          });
+          cy.edges().addClass('dim');
+        }, 180);
       });
 
       searchInput.addEventListener('keydown', function (e) {
@@ -124,16 +128,7 @@
           },
         },
         {
-          selector: 'node:selected',
-          style: {
-            'background-color': '#ffffff',
-            'width': 20,
-            'height': 20,
-            'color': '#33ff33',
-          },
-        },
-        {
-          selector: 'node.highlighted',
+          selector: 'node:selected, node.highlighted',
           style: {
             'background-color': '#ffffff',
             'width': 20,
@@ -222,9 +217,14 @@
       var wrap = document.querySelector('.graph-page') || cyEl.parentElement;
       var div = document.createElement('div');
       div.className = 'graph-empty';
-      div.innerHTML =
-        '<span class="graph-empty-heading">' + heading + '</span>' +
-        '<span class="graph-empty-sub">' + sub + '</span>';
+      var h = document.createElement('span');
+      h.className = 'graph-empty-heading';
+      h.textContent = heading;
+      var s = document.createElement('span');
+      s.className = 'graph-empty-sub';
+      s.textContent = sub;
+      div.appendChild(h);
+      div.appendChild(s);
       wrap.appendChild(div);
     }
   });

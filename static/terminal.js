@@ -17,7 +17,6 @@
 
     input.focus();
 
-    // Re-focus input on bare clicks (not on interactive elements)
     document.addEventListener('click', function (e) {
       var tag = e.target.tagName;
       if (tag !== 'A' && tag !== 'BUTTON' && tag !== 'INPUT') {
@@ -146,9 +145,10 @@
 
       for (var i = 0; i < text.length; i += TYPEWRITER_CHUNK) {
         div.textContent += text.slice(i, i + TYPEWRITER_CHUNK);
-        scrollOutput();
+        if (i % (TYPEWRITER_CHUNK * 10) === 0) scrollOutput();
         await sleep(TYPEWRITER_DELAY);
       }
+      scrollOutput();
     }
 
     function appendSourcesLine(sources) {
