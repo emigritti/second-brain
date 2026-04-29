@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A local-first personal knowledge base ("second brain") that ingests PDFs, converts them to Markdown, builds a graph knowledge structure, and answers questions by querying local data first — escalating to the Claude API only when local context is insufficient. The UI mimics an 80s home computer terminal (web-based, phosphor aesthetic).
+A local-first personal knowledge base ("second brain") that ingests documents (PDF, DOCX, XLSX, PPTX, HTML, EPUB, audio, and more), converts them to Markdown, builds a graph knowledge structure, and answers questions by querying local data first — escalating to the Claude API only when local context is insufficient. The UI mimics an 80s home computer terminal (web-based, phosphor aesthetic).
 
 ---
 
@@ -17,10 +17,10 @@ pip install -r requirements.txt
 # Start the full application (watcher + web server)
 python -m brain.app
 
-# Run the ingestion pipeline on a specific file
+# Run the ingestion pipeline on a specific file (PDF, DOCX, XLSX, PPTX, HTML, EPUB, etc.)
 python -m brain.ingest path/to/file.pdf
 
-# Process all pending files in raw/
+# Process all pending files in raw/ (all supported formats)
 python -m brain.ingest --all
 
 # Start only the web UI
@@ -50,12 +50,13 @@ python -m brain.graph export graph.json
 
 ```
 second-brain/
-├── raw/                  # Drop PDFs here; watcher picks them up automatically
+├── raw/                  # Drop files here; watcher picks them up automatically
+│                         # Supported: PDF, DOCX, XLSX, PPTX, HTML, EPUB, MD, CSV, MP3, ZIP, …
 ├── brain/
 │   ├── app.py            # Entry point: starts watcher + FastAPI server
 │   ├── server.py         # FastAPI routes and MCP server
 │   ├── ingest.py         # Orchestrates the full ingestion pipeline
-│   ├── parser.py         # PDF → Markdown conversion (docling/pymupdf4llm)
+│   ├── parser.py         # Document → Markdown conversion (pymupdf4llm for PDF, MarkItDown for all others)
 │   ├── vision.py         # Claude vision API calls for image description
 │   ├── tagger.py         # Auto-tagging via Claude API (skipped if user provides tags)
 │   ├── linker.py         # Wikilink generation between documents
@@ -78,9 +79,11 @@ second-brain/
 ### Ingestion Pipeline
 
 ```
-raw/*.pdf
-  → parser.py       PDF → Markdown + extract images to store/images/
-  → vision.py       each image → Claude vision → description injected into Markdown
+raw/*.{pdf,docx,xlsx,pptx,html,epub,md,mp3,zip,…}
+  → parser.py       parse_document() dispatches:
+                      .pdf   → pymupdf4llm (chunked, preserves image extraction)
+                      other  → MarkItDown  (markitdown[all])
+  → vision.py       PDF only: each extracted image → Claude vision → description injected into Markdown
   → tagger.py       if no manual tags → Claude API generates tags
   → linker.py       scan existing documents → generate [[wikilinks]]
   → index.py        chunk + embed → ChromaDB
@@ -151,7 +154,8 @@ Exposes the brain as an MCP server so Claude Code (or any MCP client) can query 
 
 | Library | Role |
 |---|---|
-| `docling` or `pymupdf4llm` | PDF → Markdown with image extraction |
+| `pymupdf4llm` | PDF → Markdown with image extraction |
+| `markitdown[all]` | Multi-format document conversion (DOCX, XLSX, PPTX, HTML, EPUB, audio, ZIP, …) |
 | `anthropic` | Claude API (vision, tagging, Q&A) |
 | `chromadb` | Local vector store |
 | `networkx` | In-memory knowledge graph |
