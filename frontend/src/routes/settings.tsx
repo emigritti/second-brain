@@ -5,6 +5,7 @@ import {
   useSettings,
   useSaveSettings,
   useTestLocalAI,
+  useTestOllama,
   type TaskConfig,
 } from '../api/useSettings'
 import { pageVariants } from '../lib/motion'
@@ -17,8 +18,8 @@ function BackendToggle({
 }: {
   name: string
   label: string
-  value: 'anthropic' | 'localai'
-  onChange: (v: 'anthropic' | 'localai') => void
+  value: 'anthropic' | 'localai' | 'ollama'
+  onChange: (v: 'anthropic' | 'localai' | 'ollama') => void
 }) {
   return (
     <fieldset>
@@ -26,7 +27,7 @@ function BackendToggle({
         Backend
       </legend>
       <div className="flex gap-4">
-        {(['anthropic', 'localai'] as const).map((opt) => (
+        {(['anthropic', 'localai', 'ollama'] as const).map((opt) => (
           <label key={opt} className="flex cursor-pointer items-center gap-1.5">
             <input
               type="radio"
@@ -89,7 +90,7 @@ function TaskSection({
                 }
               />
             </motion.div>
-          ) : (
+          ) : config.backend === 'localai' ? (
             <motion.div
               key="localai"
               initial={{ opacity: 0 }}
@@ -100,15 +101,38 @@ function TaskSection({
                 className="block text-xs font-medium text-slate-600"
                 htmlFor={`${task}_localai_model`}
               >
-                Local model
+                LocalAI model
               </label>
               <input
                 id={`${task}_localai_model`}
-                aria-label={`${label} local model`}
+                aria-label={`${label} localai model`}
                 className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 value={config.localai_model}
                 onChange={(e) =>
                   onChange({ ...config, localai_model: e.target.value })
+                }
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="ollama"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <label
+                className="block text-xs font-medium text-slate-600"
+                htmlFor={`${task}_ollama_model`}
+              >
+                Ollama model
+              </label>
+              <input
+                id={`${task}_ollama_model`}
+                aria-label={`${label} ollama model`}
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                value={config.ollama_model}
+                onChange={(e) =>
+                  onChange({ ...config, ollama_model: e.target.value })
                 }
               />
             </motion.div>
@@ -140,18 +164,63 @@ function TaskSection({
   )
 }
 
+function ConnectionSection({
+  title,
+  urlValue,
+  onUrlChange,
+  testMutation,
+}: {
+  title: string
+  urlValue: string
+  onUrlChange: (v: string) => void
+  testMutation: ReturnType<typeof useTestLocalAI>
+}) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-5">
+      <h3 className="mb-4 text-sm font-semibold text-slate-900">{title}</h3>
+      <div className="flex gap-3">
+        <input
+          className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+          value={urlValue}
+          onChange={(e) => onUrlChange(e.target.value)}
+          placeholder="http://..."
+        />
+        <button
+          onClick={() => testMutation.mutate(urlValue)}
+          disabled={testMutation.isPending}
+          className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+        >
+          {testMutation.isPending ? 'Testing...' : 'Test connection'}
+        </button>
+      </div>
+      {testMutation.data && (
+        <p
+          className={`mt-2 text-xs ${testMutation.data.ok ? 'text-emerald-600' : 'text-red-600'}`}
+        >
+          {testMutation.data.ok
+            ? `Connected — ${testMutation.data.models.join(', ')}`
+            : testMutation.data.error}
+        </p>
+      )}
+    </section>
+  )
+}
+
 export function SettingsPage() {
   const { data } = useSettings()
   const save = useSaveSettings()
   const testLocalAI = useTestLocalAI()
+  const testOllama = useTestOllama()
 
   const [localaiUrl, setLocalaiUrl] = useState('')
+  const [ollamaUrl, setOllamaUrl] = useState('')
   const [tagger, setTagger] = useState<TaskConfig | null>(null)
   const [linker, setLinker] = useState<TaskConfig | null>(null)
 
   useEffect(() => {
     if (data) {
       setLocalaiUrl(data.localai_base_url)
+      setOllamaUrl(data.ollama_base_url)
       setTagger(data.tagger)
       setLinker(data.linker)
     }
@@ -161,13 +230,16 @@ export function SettingsPage() {
     if (!tagger || !linker) return
     const form = new FormData()
     form.set('localai_base_url', localaiUrl)
+    form.set('ollama_base_url', ollamaUrl)
     form.set('tagger_backend', tagger.backend)
     form.set('tagger_anthropic_model', tagger.anthropic_model)
     form.set('tagger_localai_model', tagger.localai_model)
+    form.set('tagger_ollama_model', tagger.ollama_model)
     form.set('tagger_temperature', String(tagger.temperature))
     form.set('linker_backend', linker.backend)
     form.set('linker_anthropic_model', linker.anthropic_model)
     form.set('linker_localai_model', linker.localai_model)
+    form.set('linker_ollama_model', linker.ollama_model)
     form.set('linker_temperature', String(linker.temperature))
     save.mutate(form)
   }
@@ -188,34 +260,18 @@ export function SettingsPage() {
       </h1>
 
       <div className="flex flex-col gap-4">
-        <section className="rounded-xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-900">
-            LocalAI Connection
-          </h3>
-          <div className="flex gap-3">
-            <input
-              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-              value={localaiUrl}
-              onChange={(e) => setLocalaiUrl(e.target.value)}
-            />
-            <button
-              onClick={() => testLocalAI.mutate(localaiUrl)}
-              disabled={testLocalAI.isPending}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-            >
-              {testLocalAI.isPending ? 'Testing...' : 'Test connection'}
-            </button>
-          </div>
-          {testLocalAI.data && (
-            <p
-              className={`mt-2 text-xs ${testLocalAI.data.ok ? 'text-emerald-600' : 'text-red-600'}`}
-            >
-              {testLocalAI.data.ok
-                ? `Connected — ${testLocalAI.data.models.join(', ')}`
-                : testLocalAI.data.error}
-            </p>
-          )}
-        </section>
+        <ConnectionSection
+          title="LocalAI Connection"
+          urlValue={localaiUrl}
+          onUrlChange={setLocalaiUrl}
+          testMutation={testLocalAI}
+        />
+        <ConnectionSection
+          title="Ollama Connection"
+          urlValue={ollamaUrl}
+          onUrlChange={setOllamaUrl}
+          testMutation={testOllama}
+        />
 
         <TaskSection
           task="tagger"
