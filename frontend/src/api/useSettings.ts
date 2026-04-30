@@ -4,7 +4,7 @@ import { apiFetch } from './client'
 export interface TaskConfig {
   backend: 'anthropic' | 'localai'
   anthropic_model: string
-  local_model: string
+  localai_model: string
   temperature: number
 }
 

@@ -8,6 +8,16 @@ client = TestClient(app)
 
 
 
+def test_settings_get():
+    """GET /api/settings returns current config with expected keys."""
+    response = client.get("/api/settings")
+    assert response.status_code == 200
+    data = response.json()
+    assert "tagger" in data
+    assert "linker" in data
+    assert "backend" in data["tagger"]
+
+
 def test_settings_save_valid(tmp_path, monkeypatch):
     """POST /settings with valid form data returns saved status."""
     monkeypatch.setattr("brain.llm.CONFIG_PATH", str(tmp_path / "config.json"))

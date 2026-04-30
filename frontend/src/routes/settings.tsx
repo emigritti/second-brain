@@ -98,17 +98,17 @@ function TaskSection({
             >
               <label
                 className="block text-xs font-medium text-slate-600"
-                htmlFor={`${task}_local_model`}
+                htmlFor={`${task}_localai_model`}
               >
                 Local model
               </label>
               <input
-                id={`${task}_local_model`}
+                id={`${task}_localai_model`}
                 aria-label={`${label} local model`}
                 className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                value={config.local_model}
+                value={config.localai_model}
                 onChange={(e) =>
-                  onChange({ ...config, local_model: e.target.value })
+                  onChange({ ...config, localai_model: e.target.value })
                 }
               />
             </motion.div>
@@ -163,11 +163,11 @@ export function SettingsPage() {
     form.set('localai_base_url', localaiUrl)
     form.set('tagger_backend', tagger.backend)
     form.set('tagger_anthropic_model', tagger.anthropic_model)
-    form.set('tagger_local_model', tagger.local_model)
+    form.set('tagger_localai_model', tagger.localai_model)
     form.set('tagger_temperature', String(tagger.temperature))
     form.set('linker_backend', linker.backend)
     form.set('linker_anthropic_model', linker.anthropic_model)
-    form.set('linker_local_model', linker.local_model)
+    form.set('linker_localai_model', linker.localai_model)
     form.set('linker_temperature', String(linker.temperature))
     save.mutate(form)
   }

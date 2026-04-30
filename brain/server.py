@@ -130,6 +130,12 @@ async def view_document(request: Request, slug: str):
         "content_html": content_html,
     })
 
+@api.get("/settings")
+async def get_settings():
+    """Return current LLM configuration."""
+    return JSONResponse(llm.load_config())
+
+
 @api.post("/settings")
 async def save_settings(request: Request):
     """Persist LLM configuration to store/config.json."""
