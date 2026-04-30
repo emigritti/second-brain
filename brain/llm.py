@@ -9,6 +9,10 @@ CONFIG_PATH = os.path.join(_PROJECT_ROOT, "store", "config.json")
 DEFAULT_CONFIG: dict = {
     "localai_base_url": "http://localai:8080",
     "ollama_base_url": "http://host.docker.internal:11434",
+    "anthropic_require_approval": False,
+    "anthropic_fallback_enabled": True,
+    "vision_enabled": True,
+    "query_escalation_enabled": True,
     "tagger": {
         "backend": "anthropic",
         "localai_model": "mistral-7b-instruct",
@@ -91,6 +95,16 @@ def chat(
         )
         if result is not None:
             return result
+        if not config.get("anthropic_fallback_enabled", True):
+            msg = (
+                f"{backend} unavailable for '{task}' "
+                f"(model: {model}), "
+                f"Anthropic fallback is disabled"
+            )
+            print(f"[llm] {msg}")
+            with _warn_lock:
+                _pending_warnings.append({"task": task, "msg": msg})
+            return ""
         msg = (
             f"{backend} unavailable for '{task}' "
             f"(model: {model}), "
