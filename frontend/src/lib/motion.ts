@@ -30,7 +30,7 @@ export const overlayVariants: Variants = {
 }
 
 export const paletteVariants: Variants = {
-  initial: { opacity: 0, y: -12, scale: 0.97 },
+  initial: { opacity: 0, y: -16, scale: 0.97 },
   animate: {
     opacity: 1,
     y: 0,

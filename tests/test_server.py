@@ -47,10 +47,10 @@ def test_settings_save_invalid_temperature(tmp_path, monkeypatch):
 
 
 def test_test_ollama_success():
-    """POST /settings/test-ollama returns ok=True and model list on success."""
+    """POST /settings/test-localai returns ok=True and model list on success."""
     with patch("brain.llm.list_ollama_models", return_value=["qwen2.5:7b", "gemma3:27b"]):
         response = client.post(
-            "/settings/test-ollama",
+            "/settings/test-localai",
             json={"base_url": "http://localhost:11434"},
         )
     assert response.status_code == 200
@@ -60,10 +60,10 @@ def test_test_ollama_success():
 
 
 def test_test_ollama_failure():
-    """POST /settings/test-ollama returns ok=False with error message on failure."""
+    """POST /settings/test-localai returns ok=False with error message on failure."""
     with patch("brain.llm.list_ollama_models", side_effect=ConnectionError("refused")):
         response = client.post(
-            "/settings/test-ollama",
+            "/settings/test-localai",
             json={"base_url": "http://localhost:11434"},
         )
     assert response.status_code == 200

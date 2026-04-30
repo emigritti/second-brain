@@ -161,7 +161,7 @@ async def save_settings(request: Request):
         return JSONResponse(status_code=400, content={"error": f"Invalid value: {e}"})
 
 
-@app.post("/settings/test-ollama")
+@app.post("/settings/test-localai")
 async def test_ollama_connection(request: Request):
     """Ping Ollama and return available model names."""
     data = await request.json()

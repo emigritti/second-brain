@@ -33,12 +33,12 @@ export function TopNav({ onOpenPalette }: Props) {
               <Link
                 key={to}
                 to={to}
-                className="relative rounded-full px-3 py-1 text-sm text-slate-600 transition-colors hover:text-slate-900"
+                className={`relative rounded-full px-3 py-1 text-sm transition-colors hover:text-slate-900 ${isActive ? 'text-indigo-700' : 'text-slate-600'}`}
               >
                 {isActive && (
                   <motion.span
                     layoutId="nav-pill"
-                    className="absolute inset-0 rounded-full bg-slate-100"
+                    className="absolute inset-0 rounded-full bg-indigo-100"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}

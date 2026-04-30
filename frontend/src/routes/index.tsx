@@ -2,8 +2,32 @@ import { createFileRoute } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { useAsk } from '../api/useAsk'
+import { useIngestLog } from '../api/useIngestLog'
 import { AnswerCard } from '../components/AnswerCard'
 import { pageVariants } from '../lib/motion'
+
+function EmptyState() {
+  const { data: log } = useIngestLog()
+  if (!log || log.length === 0) return null
+  return (
+    <div className="mt-8">
+      <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-400">
+        Recent ingestions
+      </p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {log.slice(0, 6).map((ev) => (
+          <a
+            key={ev.slug}
+            href={`/doc/${ev.slug}`}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition-colors hover:border-indigo-300 hover:text-indigo-700"
+          >
+            {ev.slug.replace(/_/g, ' ')}
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function SearchPage() {
   const [query, setQuery] = useState('')
@@ -52,6 +76,10 @@ export function SearchPage() {
 
         {ask.data && (
           <AnswerCard answer={ask.data.answer} sources={ask.data.sources} />
+        )}
+
+        {!ask.data && !ask.isPending && (
+          <EmptyState />
         )}
       </div>
     </motion.div>
