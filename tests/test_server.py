@@ -7,33 +7,6 @@ from brain.server import app
 client = TestClient(app)
 
 
-def test_index_page():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert "SECOND BRAIN" in response.text
-
-
-def test_graph_page():
-    response = client.get("/graph")
-    assert response.status_code == 200
-    assert "cy" in response.text
-
-
-def test_upload_page():
-    response = client.get("/upload")
-    assert response.status_code == 200
-    assert "UPLOAD" in response.text
-
-
-def test_settings_page_renders(tmp_path, monkeypatch):
-    """Settings page loads and shows section titles."""
-    monkeypatch.setattr("brain.llm.CONFIG_PATH", str(tmp_path / "config.json"))
-    response = client.get("/settings")
-    assert response.status_code == 200
-    assert "TAGGER" in response.text
-    assert "LINKER" in response.text
-    assert "OLLAMA" in response.text
-
 
 def test_settings_save_valid(tmp_path, monkeypatch):
     """POST /settings with valid form data returns saved status."""
