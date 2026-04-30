@@ -85,6 +85,8 @@ def chat(
         print(f"[llm] {msg}")
         with _warn_lock:
             _pending_warnings.append({"task": task, "msg": msg})
+    elif backend != "anthropic":
+        print(f"[llm] Unknown backend '{backend}' for '{task}', falling back to Anthropic")
 
     return _anthropic_chat(
         model=task_cfg["anthropic_model"],
@@ -94,11 +96,19 @@ def chat(
     )
 
 
-def list_localai_models(base_url: str) -> list[str]:
+def _make_localai_client(base_url: str):
     from openai import OpenAI
-    client = OpenAI(base_url=f"{base_url.rstrip('/')}/v1", api_key="none")
-    response = client.models.list()
-    return [m.id for m in response.data]
+    return OpenAI(base_url=f"{base_url.rstrip('/')}/v1", api_key="none")
+
+
+def list_localai_models(base_url: str) -> list[str]:
+    try:
+        client = _make_localai_client(base_url)
+        response = client.models.list()
+        return [m.id for m in response.data]
+    except Exception as e:
+        print(f"[llm] list_localai_models error: {e}")
+        return []
 
 
 def _localai_chat(
@@ -110,8 +120,7 @@ def _localai_chat(
     temperature: float,
 ) -> str | None:
     try:
-        from openai import OpenAI
-        client = OpenAI(base_url=f"{base_url.rstrip('/')}/v1", api_key="none")
+        client = _make_localai_client(base_url)
         response = client.chat.completions.create(
             model=model,
             messages=[

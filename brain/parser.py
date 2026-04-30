@@ -11,6 +11,8 @@ MARKITDOWN_EXTENSIONS = {
     '.epub', '.md', '.mp3', '.wav', '.m4a', '.zip'
 }
 
+_PDF_CHUNK_SIZE = 10
+
 def parse_pdf(file_path: str, slug: str) -> Tuple[str, List[str]]:
     """
     Parse a PDF file, convert to Markdown, and extract images.
@@ -23,11 +25,9 @@ def parse_pdf(file_path: str, slug: str) -> Tuple[str, List[str]]:
     image_dir = os.path.join(IMAGES_STORE_DIR, slug)
     os.makedirs(image_dir, exist_ok=True)
 
-    # --- Text extraction (chunked, no image writing) ---
     markdown_chunks = []
-    CHUNK_SIZE = 10
-    for start_page in range(0, total_pages, CHUNK_SIZE):
-        end_page = min(start_page + CHUNK_SIZE - 1, total_pages - 1)
+    for start_page in range(0, total_pages, _PDF_CHUNK_SIZE):
+        end_page = min(start_page + _PDF_CHUNK_SIZE - 1, total_pages - 1)
         pages = list(range(start_page, end_page + 1))
         try:
             md_text = pymupdf4llm.to_markdown(doc, pages=pages, write_images=False)
@@ -35,7 +35,6 @@ def parse_pdf(file_path: str, slug: str) -> Tuple[str, List[str]]:
         except Exception as e:
             print(f"Error processing pages {start_page}-{end_page}: {e}")
 
-    # --- Image extraction (fitz, page-by-page, deduped by xref) ---
     extracted_image_paths = []
     seen_xrefs: set[int] = set()
     img_index = 0
@@ -54,8 +53,8 @@ def parse_pdf(file_path: str, slug: str) -> Tuple[str, List[str]]:
                     f.write(base_image["image"])
                 extracted_image_paths.append(img_path)
                 img_index += 1
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[parser] Skipping image xref={xref}: {e}")
 
     doc.close()
     return "\n\n".join(markdown_chunks), extracted_image_paths
