@@ -2,7 +2,7 @@ import os
 import shutil
 import markdown
 import nh3
-from fastapi import FastAPI, Request, File, UploadFile, BackgroundTasks
+from fastapi import APIRouter, FastAPI, Request, File, UploadFile, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -50,19 +50,23 @@ brain_index = BrainIndex()
 brain_search = BrainSearch(brain_index, brain_graph)
 query_engine = QueryEngine(brain_search)
 
+# All API routes live under /api so the React SPA can call /api/* in both
+# dev (Vite proxy strips /api) and production (FastAPI serves /api/* directly).
+api = APIRouter(prefix="/api")
+
+
 class QueryRequest(BaseModel):
     query: str
 
-@app.post("/query")
+@api.post("/query")
 async def handle_query(req: QueryRequest):
     """Accepts question, returns answer + sources (JSON)."""
     answer, sources = query_engine.query(req.query)
     return JSONResponse(content={"answer": answer, "sources": sources})
 
-@app.get("/graph/data")
+@api.get("/graph/data")
 async def graph_data():
     """Graph nodes + edges as JSON for Cytoscape."""
-    # Ensure graph is up to date
     brain_graph._load_from_files()
     return HTMLResponse(content=brain_graph.export_json(), media_type="application/json")
 
@@ -85,15 +89,13 @@ def _safe_slug_path(base_dir: str, slug: str):
         return candidate
     return None
 
-@app.get("/doc/{slug}")
+@api.get("/doc/{slug}")
 async def view_document(request: Request, slug: str):
-    """Rendered Markdown document viewer — HTML or JSON depending on Accept header."""
+    """Rendered Markdown document viewer — JSON when Accept: application/json."""
     doc_path = _safe_slug_path(DOCS_DIR, slug)
 
     if doc_path is None or not os.path.exists(doc_path):
-        if "application/json" in request.headers.get("accept", ""):
-            return JSONResponse(status_code=404, content={"error": "Not found"})
-        return HTMLResponse(content="Document not found", status_code=404)
+        return JSONResponse(status_code=404, content={"error": "Not found"})
 
     with open(doc_path, "r", encoding="utf-8") as f:
         md_text = f.read()
@@ -101,41 +103,34 @@ async def view_document(request: Request, slug: str):
     raw_html = markdown.markdown(md_text, extensions=["fenced_code", "tables"])
     content_html = nh3.clean(raw_html, tags=_NH3_TAGS, attributes=_NH3_ATTRS)
 
-    if "application/json" in request.headers.get("accept", ""):
-        # Parse YAML frontmatter manually to avoid test mocking issues
-        title = slug.replace("_", " ").title()
-        tags: list = []
-        body = md_text
-        if md_text.startswith("---"):
-            end = md_text.find("---", 3)
-            if end != -1:
-                fm_block = md_text[3:end]
-                for line in fm_block.splitlines():
-                    if line.startswith("title:"):
-                        title = line.split(":", 1)[1].strip().strip('"\'')
-                    elif line.startswith("tags:"):
-                        raw = line.split(":", 1)[1].strip()
-                        if raw.startswith("["):
-                            tags = [t.strip().strip('"\'') for t in raw.strip("[]").split(",") if t.strip()]
-                body = md_text[end + 3:].lstrip()
-        else:
-            # Try to get title from first H1
-            for line in md_text.splitlines():
-                if line.startswith("# "):
-                    title = line[2:].strip()
-                    break
-        return JSONResponse({
-            "slug": slug,
-            "title": title,
-            "tags": tags,
-            "content_html": content_html,
-        })
+    # Parse YAML frontmatter manually
+    title = slug.replace("_", " ").title()
+    tags: list = []
+    if md_text.startswith("---"):
+        end = md_text.find("---", 3)
+        if end != -1:
+            fm_block = md_text[3:end]
+            for line in fm_block.splitlines():
+                if line.startswith("title:"):
+                    title = line.split(":", 1)[1].strip().strip('"\'')
+                elif line.startswith("tags:"):
+                    raw = line.split(":", 1)[1].strip()
+                    if raw.startswith("["):
+                        tags = [t.strip().strip('"\'') for t in raw.strip("[]").split(",") if t.strip()]
+    else:
+        for line in md_text.splitlines():
+            if line.startswith("# "):
+                title = line[2:].strip()
+                break
 
-    return templates.TemplateResponse(
-        request, "doc.html", {"slug": slug, "content": content_html}
-    )
+    return JSONResponse({
+        "slug": slug,
+        "title": title,
+        "tags": tags,
+        "content_html": content_html,
+    })
 
-@app.post("/settings")
+@api.post("/settings")
 async def save_settings(request: Request):
     """Persist LLM configuration to store/config.json."""
     form = await request.form()
@@ -164,7 +159,7 @@ async def save_settings(request: Request):
         return JSONResponse(status_code=400, content={"error": f"Invalid value: {e}"})
 
 
-@app.post("/settings/test-localai")
+@api.post("/settings/test-localai")
 async def test_localai_connection(request: Request):
     """Ping LocalAI and return available model names."""
     data = await request.json()
@@ -176,7 +171,7 @@ async def test_localai_connection(request: Request):
         return JSONResponse({"ok": False, "error": str(e)})
 
 
-@app.post("/settings/test-ollama")
+@api.post("/settings/test-ollama")
 async def test_ollama_connection(request: Request):
     """Ping Ollama (OpenAI-compatible endpoint) and return available model names."""
     data = await request.json()
@@ -188,13 +183,13 @@ async def test_ollama_connection(request: Request):
         return JSONResponse({"ok": False, "error": str(e)})
 
 
-@app.get("/ingest/log")
+@api.get("/ingest/log")
 async def ingest_log():
     """Return recent ingestion events including any LLM fallback warnings."""
     return JSONResponse(list(INGEST_LOG))
 
 
-@app.post("/upload")
+@api.post("/upload")
 async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     """Save uploaded file to raw/, trigger ingest in background, return status."""
     safe_name = os.path.basename(file.filename or "")
@@ -211,15 +206,17 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Trigger ingest in background
     background_tasks.add_task(ingest_document, file_path, brain_graph, brain_index)
 
     return {"filename": file.filename, "status": "Ingestion started in background"}
 
 
+# Register all API routes
+app.include_router(api)
+
+# ── Static assets from React build ───────────────────────────────────────────
 FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
 
-# Cache SPA index.html at startup for faster serving
 _SPA_INDEX_HTML: str | None = None
 _spa_index_path = os.path.join(FRONTEND_DIST, "index.html")
 if os.path.exists(_spa_index_path):

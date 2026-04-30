@@ -11,7 +11,7 @@ client = TestClient(app)
 def test_settings_save_valid(tmp_path, monkeypatch):
     """POST /settings with valid form data returns saved status."""
     monkeypatch.setattr("brain.llm.CONFIG_PATH", str(tmp_path / "config.json"))
-    response = client.post("/settings", data={
+    response = client.post("/api/settings", data={
         "ollama_base_url": "http://localhost:11434",
         "tagger_backend": "ollama",
         "tagger_ollama_model": "qwen2.5:7b",
@@ -32,7 +32,7 @@ def test_settings_save_valid(tmp_path, monkeypatch):
 def test_settings_save_invalid_temperature(tmp_path, monkeypatch):
     """POST /settings with non-numeric temperature returns 400."""
     monkeypatch.setattr("brain.llm.CONFIG_PATH", str(tmp_path / "config.json"))
-    response = client.post("/settings", data={
+    response = client.post("/api/settings", data={
         "ollama_base_url": "http://localhost:11434",
         "tagger_backend": "anthropic",
         "tagger_ollama_model": "qwen2.5:7b",
@@ -46,7 +46,7 @@ def test_settings_save_invalid_temperature(tmp_path, monkeypatch):
     assert response.status_code == 400
 
 
-@pytest.mark.parametrize("endpoint", ["/settings/test-ollama", "/settings/test-localai"])
+@pytest.mark.parametrize("endpoint", ["/api/settings/test-ollama", "/api/settings/test-localai"])
 def test_test_local_backend_success(endpoint):
     """Both test endpoints call list_openai_models and return the model list."""
     with patch("brain.llm.list_openai_models", return_value=["qwen2.5:7b", "gemma3:27b"]):
@@ -57,7 +57,7 @@ def test_test_local_backend_success(endpoint):
     assert "qwen2.5:7b" in data["models"]
 
 
-@pytest.mark.parametrize("endpoint", ["/settings/test-ollama", "/settings/test-localai"])
+@pytest.mark.parametrize("endpoint", ["/api/settings/test-ollama", "/api/settings/test-localai"])
 def test_test_local_backend_failure(endpoint):
     """Both test endpoints surface errors as ok=False with a message."""
     with patch("brain.llm.list_openai_models", side_effect=ConnectionError("refused")):
@@ -72,6 +72,6 @@ def test_ingest_log_empty():
     """GET /ingest/log returns an empty list when no ingestions have run."""
     from brain.ingest import INGEST_LOG
     INGEST_LOG.clear()
-    response = client.get("/ingest/log")
+    response = client.get("/api/ingest/log")
     assert response.status_code == 200
     assert response.json() == []

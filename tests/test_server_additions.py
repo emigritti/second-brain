@@ -9,7 +9,7 @@ async def test_cors_header_present():
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         res = await client.options(
-            "/query",
+            "/api/query",
             headers={
                 "Origin": "http://localhost:5173",
                 "Access-Control-Request-Method": "POST",
@@ -30,7 +30,7 @@ async def test_doc_json_variant(tmp_path, monkeypatch):
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         res = await client.get(
-            "/doc/hello", headers={"Accept": "application/json"}
+            "/api/doc/hello", headers={"Accept": "application/json"}
         )
     assert res.status_code == 200
     data = res.json()
