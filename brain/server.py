@@ -141,16 +141,16 @@ async def save_settings(request: Request):
     form = await request.form()
     try:
         config = {
-            "ollama_base_url": str(form.get("ollama_base_url", llm.DEFAULT_CONFIG["ollama_base_url"])).strip(),
+            "ollama_base_url": str(form.get("localai_base_url", llm.DEFAULT_CONFIG["ollama_base_url"])).strip(),
             "tagger": {
                 "backend": str(form.get("tagger_backend", "anthropic")),
-                "ollama_model": str(form.get("tagger_ollama_model", llm.DEFAULT_CONFIG["tagger"]["ollama_model"])).strip(),
+                "ollama_model": str(form.get("tagger_local_model", llm.DEFAULT_CONFIG["tagger"]["ollama_model"])).strip(),
                 "anthropic_model": str(form.get("tagger_anthropic_model", llm.DEFAULT_CONFIG["tagger"]["anthropic_model"])).strip(),
                 "temperature": float(form.get("tagger_temperature", llm.DEFAULT_CONFIG["tagger"]["temperature"])),
             },
             "linker": {
                 "backend": str(form.get("linker_backend", "anthropic")),
-                "ollama_model": str(form.get("linker_ollama_model", llm.DEFAULT_CONFIG["linker"]["ollama_model"])).strip(),
+                "ollama_model": str(form.get("linker_local_model", llm.DEFAULT_CONFIG["linker"]["ollama_model"])).strip(),
                 "anthropic_model": str(form.get("linker_anthropic_model", llm.DEFAULT_CONFIG["linker"]["anthropic_model"])).strip(),
                 "temperature": float(form.get("linker_temperature", llm.DEFAULT_CONFIG["linker"]["temperature"])),
             },
@@ -204,6 +204,13 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
 
 FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
 
+# Cache SPA index.html at startup for faster serving
+_SPA_INDEX_HTML: str | None = None
+_spa_index_path = os.path.join(FRONTEND_DIST, "index.html")
+if os.path.exists(_spa_index_path):
+    with open(_spa_index_path, "r", encoding="utf-8") as _f:
+        _SPA_INDEX_HTML = _f.read()
+
 if os.path.isdir(os.path.join(FRONTEND_DIST, "assets")):
     app.mount(
         "/assets",
@@ -215,10 +222,8 @@ if os.path.isdir(os.path.join(FRONTEND_DIST, "assets")):
 @app.get("/{full_path:path}", include_in_schema=False)
 async def spa_fallback(full_path: str):
     """Serve React SPA index.html for any non-API path in production."""
-    index = os.path.join(FRONTEND_DIST, "index.html")
-    if os.path.exists(index):
-        with open(index, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
+    if _SPA_INDEX_HTML is not None:
+        return HTMLResponse(content=_SPA_INDEX_HTML)
     return HTMLResponse(
         content="Frontend not built. Run: cd frontend && npm run build",
         status_code=503,

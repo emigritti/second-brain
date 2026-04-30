@@ -15,7 +15,14 @@ interface Props {
 export function CytoscapeGraph({ elements, onNodeClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<cytoscape.Core | null>(null)
+  const onNodeClickRef = useRef(onNodeClick)
 
+  // Keep the ref up to date without triggering effect re-run
+  useEffect(() => {
+    onNodeClickRef.current = onNodeClick
+  }, [onNodeClick])
+
+  // Init/layout effect — only when elements change
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -52,14 +59,12 @@ export function CytoscapeGraph({ elements, onNodeClick }: Props) {
       layout: { name: 'cose', animate: false },
     })
 
-    if (onNodeClick) {
-      cyRef.current.on('tap', 'node', (evt) => {
-        onNodeClick(evt.target.id() as string)
-      })
-    }
+    cyRef.current.on('tap', 'node', (evt) => {
+      onNodeClickRef.current?.(evt.target.id() as string)
+    })
 
     return () => cyRef.current?.destroy()
-  }, [elements, onNodeClick])
+  }, [elements])
 
   return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 }

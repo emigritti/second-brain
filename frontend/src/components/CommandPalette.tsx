@@ -28,11 +28,11 @@ export function CommandPalette({ open, onClose }: Props) {
   )
 
   useEffect(() => {
-    if (open) {
-      setQuery('')
-      setSelectedIdx(0)
-      setTimeout(() => inputRef.current?.focus(), 50)
-    }
+    if (!open) return
+    setQuery('')
+    setSelectedIdx(0)
+    const id = setTimeout(() => inputRef.current?.focus(), 50)
+    return () => clearTimeout(id)
   }, [open])
 
   useEffect(() => {
