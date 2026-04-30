@@ -29,7 +29,6 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY brain/ brain/
 COPY static/ static/
-COPY templates/ templates/
 
 COPY --from=frontend-build /app/frontend/dist /app/frontend/dist
 

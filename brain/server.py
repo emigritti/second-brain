@@ -53,21 +53,11 @@ query_engine = QueryEngine(brain_search)
 class QueryRequest(BaseModel):
     query: str
 
-@app.get("/", response_class=HTMLResponse)
-async def index_page(request: Request):
-    """Search/Q&A terminal prompt page."""
-    return templates.TemplateResponse(request, "index.html")
-
 @app.post("/query")
 async def handle_query(req: QueryRequest):
     """Accepts question, returns answer + sources (JSON)."""
     answer, sources = query_engine.query(req.query)
     return JSONResponse(content={"answer": answer, "sources": sources})
-
-@app.get("/graph", response_class=HTMLResponse)
-async def graph_page(request: Request):
-    """Cytoscape.js knowledge graph page."""
-    return templates.TemplateResponse(request, "graph.html")
 
 @app.get("/graph/data")
 async def graph_data():
@@ -145,13 +135,6 @@ async def view_document(request: Request, slug: str):
         request, "doc.html", {"slug": slug, "content": content_html}
     )
 
-@app.get("/settings", response_class=HTMLResponse)
-async def settings_page(request: Request):
-    """LLM backend configuration page."""
-    config = llm.load_config()
-    return templates.TemplateResponse(request, "settings.html", {"config": config})
-
-
 @app.post("/settings")
 async def save_settings(request: Request):
     """Persist LLM configuration to store/config.json."""
@@ -195,11 +178,6 @@ async def ingest_log():
     """Return recent ingestion events including any LLM fallback warnings."""
     return JSONResponse(list(INGEST_LOG))
 
-
-@app.get("/upload", response_class=HTMLResponse)
-async def upload_page(request: Request):
-    """Drag-and-drop PDF upload page."""
-    return templates.TemplateResponse(request, "upload.html")
 
 @app.post("/upload")
 async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
