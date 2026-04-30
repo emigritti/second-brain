@@ -3,6 +3,7 @@ import shutil
 import markdown
 import nh3
 from fastapi import FastAPI, Request, File, UploadFile, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -19,6 +20,13 @@ from brain import llm
 UPLOAD_EXTENSIONS = {'.pdf'} | MARKITDOWN_EXTENSIONS
 
 app = FastAPI(title="Second Brain Terminal")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Setup directories
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -87,21 +95,55 @@ def _safe_slug_path(base_dir: str, slug: str):
         return candidate
     return None
 
-@app.get("/doc/{slug}", response_class=HTMLResponse)
+@app.get("/doc/{slug}")
 async def view_document(request: Request, slug: str):
-    """Rendered Markdown document viewer."""
+    """Rendered Markdown document viewer — HTML or JSON depending on Accept header."""
     doc_path = _safe_slug_path(DOCS_DIR, slug)
 
     if doc_path is None or not os.path.exists(doc_path):
+        if "application/json" in request.headers.get("accept", ""):
+            return JSONResponse(status_code=404, content={"error": "Not found"})
         return HTMLResponse(content="Document not found", status_code=404)
 
-    with open(doc_path, 'r', encoding='utf-8') as f:
+    with open(doc_path, "r", encoding="utf-8") as f:
         md_text = f.read()
 
-    raw_html = markdown.markdown(md_text, extensions=['fenced_code', 'tables'])
-    html_content = nh3.clean(raw_html, tags=_NH3_TAGS, attributes=_NH3_ATTRS)
+    raw_html = markdown.markdown(md_text, extensions=["fenced_code", "tables"])
+    content_html = nh3.clean(raw_html, tags=_NH3_TAGS, attributes=_NH3_ATTRS)
 
-    return templates.TemplateResponse(request, "doc.html", {"slug": slug, "content": html_content})
+    if "application/json" in request.headers.get("accept", ""):
+        # Parse YAML frontmatter manually to avoid test mocking issues
+        title = slug.replace("_", " ").title()
+        tags: list = []
+        body = md_text
+        if md_text.startswith("---"):
+            end = md_text.find("---", 3)
+            if end != -1:
+                fm_block = md_text[3:end]
+                for line in fm_block.splitlines():
+                    if line.startswith("title:"):
+                        title = line.split(":", 1)[1].strip().strip('"\'')
+                    elif line.startswith("tags:"):
+                        raw = line.split(":", 1)[1].strip()
+                        if raw.startswith("["):
+                            tags = [t.strip().strip('"\'') for t in raw.strip("[]").split(",") if t.strip()]
+                body = md_text[end + 3:].lstrip()
+        else:
+            # Try to get title from first H1
+            for line in md_text.splitlines():
+                if line.startswith("# "):
+                    title = line[2:].strip()
+                    break
+        return JSONResponse({
+            "slug": slug,
+            "title": title,
+            "tags": tags,
+            "content_html": content_html,
+        })
+
+    return templates.TemplateResponse(
+        request, "doc.html", {"slug": slug, "content": content_html}
+    )
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
@@ -180,3 +222,26 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
     background_tasks.add_task(ingest_document, file_path, brain_graph, brain_index)
 
     return {"filename": file.filename, "status": "Ingestion started in background"}
+
+
+FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
+
+if os.path.isdir(os.path.join(FRONTEND_DIST, "assets")):
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")),
+        name="frontend-assets",
+    )
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+async def spa_fallback(full_path: str):
+    """Serve React SPA index.html for any non-API path in production."""
+    index = os.path.join(FRONTEND_DIST, "index.html")
+    if os.path.exists(index):
+        with open(index, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(
+        content="Frontend not built. Run: cd frontend && npm run build",
+        status_code=503,
+    )
