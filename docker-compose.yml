@@ -28,6 +28,8 @@ services:
       - brain-raw:/app/raw
     depends_on:
       - localai
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]

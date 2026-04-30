@@ -1,5 +1,13 @@
 # ADR 0005: Optional Local LLM Backend via Ollama
 
+## Status
+
+**Accepted** — original proposal stands, but the implementation has evolved:
+
+- **2026-04-29** Accepted as written: Ollama-only local backend using the `ollama` Python SDK.
+- **2026-04-29 (later)** Briefly superseded by a LocalAI + llama.cpp implementation due to a macOS Docker/Metal compatibility issue that prevented the Ollama-on-host setup from being reachable at the time. **No ADR was filed for that interim change** — recorded retroactively here for traceability.
+- **2026-04-30** Amended by [ADR 0006](0006-reintroduce-ollama-alongside-localai.md): the macOS issue was resolved and Ollama is reintroduced. Both Ollama and LocalAI are now selectable per task. The original rationale below (hardware fit, graceful fallback, lazy import, runtime config, scope boundary) still applies. Only the dispatch path changed: Ollama is now reached through its **OpenAI-compatible endpoint** (`/v1`) using the `openai` SDK instead of the dedicated `ollama` Python SDK, so a single client implementation serves both LocalAI and Ollama.
+
 ## Context
 
 The ingestion pipeline calls the Anthropic Claude API on every document ingested — once for tagging (`tagger.py`) and once for wikilink injection (`linker.py`). On a high-ingestion workload these calls accumulate quickly, exhausting API rate limits and incurring recurring cost.
@@ -29,3 +37,7 @@ A new `brain/llm.py` module owns all provider logic. `tagger.py` and `linker.py`
 - **Negative**: First-time setup requires `ollama pull <model>` on the host machine.
 - **Negative**: Local inference is slower than Haiku for tagging; acceptable since ingestion is already a background task.
 - **Neutral**: `store/config.json` is created on first save. Absent file = all defaults (Anthropic).
+
+## Update (2026-04-30)
+
+See [ADR 0006](0006-reintroduce-ollama-alongside-localai.md) for the current state. Ollama remains a first-class local backend; LocalAI is offered alongside it for users who prefer a Docker-native setup. The schema in `brain/llm.py` now carries both `localai_*` and `ollama_*` keys, and `chat()` dispatches by the per-task `backend` field (`"anthropic"` | `"localai"` | `"ollama"`).

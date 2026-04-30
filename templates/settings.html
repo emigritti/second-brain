@@ -31,6 +31,30 @@
         <div id="localai-test-result" class="settings-test-result" aria-live="polite"></div>
     </section>
 
+    <!-- ── Ollama connection ─────────────────────────── -->
+    <section class="settings-section">
+        <h3 class="settings-section-title">OLLAMA CONNECTION</h3>
+
+        <div class="settings-row">
+            <label class="settings-label" for="ollama_base_url">BASE URL</label>
+            <div class="settings-field-group">
+                <input class="settings-input"
+                       type="text"
+                       id="ollama_base_url"
+                       name="ollama_base_url"
+                       value="{{ config.ollama_base_url }}"
+                       placeholder="http://host.docker.internal:11434"
+                       spellcheck="false"
+                       autocomplete="off">
+                <button class="settings-btn settings-btn--secondary"
+                        type="button"
+                        id="btn-test-ollama">TEST CONNECTION</button>
+            </div>
+        </div>
+
+        <div id="ollama-test-result" class="settings-test-result" aria-live="polite"></div>
+    </section>
+
     <!-- ── Tagger ────────────────────────────────────── -->
     <section class="settings-section">
         <h3 class="settings-section-title">TAGGER
@@ -50,6 +74,11 @@
                            {% if config.tagger.backend == 'localai' %}checked{% endif %}>
                     <span>LOCALAI</span>
                 </label>
+                <label class="settings-radio-label">
+                    <input type="radio" name="tagger_backend" value="ollama"
+                           {% if config.tagger.backend == 'ollama' %}checked{% endif %}>
+                    <span>OLLAMA</span>
+                </label>
             </div>
         </div>
 
@@ -65,13 +94,24 @@
         </div>
 
         <div class="settings-row settings-conditional" data-task="tagger" data-backend="localai">
-            <label class="settings-label" for="tagger_local_model">LOCAL MODEL</label>
+            <label class="settings-label" for="tagger_localai_model">LOCALAI MODEL</label>
             <input class="settings-input"
                    type="text"
-                   id="tagger_local_model"
-                   name="tagger_local_model"
-                   value="{{ config.tagger.local_model }}"
+                   id="tagger_localai_model"
+                   name="tagger_localai_model"
+                   value="{{ config.tagger.localai_model }}"
                    placeholder="mistral-7b-instruct"
+                   spellcheck="false">
+        </div>
+
+        <div class="settings-row settings-conditional" data-task="tagger" data-backend="ollama">
+            <label class="settings-label" for="tagger_ollama_model">OLLAMA MODEL</label>
+            <input class="settings-input"
+                   type="text"
+                   id="tagger_ollama_model"
+                   name="tagger_ollama_model"
+                   value="{{ config.tagger.ollama_model }}"
+                   placeholder="qwen2.5:7b"
                    spellcheck="false">
         </div>
 
@@ -105,6 +145,11 @@
                            {% if config.linker.backend == 'localai' %}checked{% endif %}>
                     <span>LOCALAI</span>
                 </label>
+                <label class="settings-radio-label">
+                    <input type="radio" name="linker_backend" value="ollama"
+                           {% if config.linker.backend == 'ollama' %}checked{% endif %}>
+                    <span>OLLAMA</span>
+                </label>
             </div>
         </div>
 
@@ -120,13 +165,24 @@
         </div>
 
         <div class="settings-row settings-conditional" data-task="linker" data-backend="localai">
-            <label class="settings-label" for="linker_local_model">LOCAL MODEL</label>
+            <label class="settings-label" for="linker_localai_model">LOCALAI MODEL</label>
             <input class="settings-input"
                    type="text"
-                   id="linker_local_model"
-                   name="linker_local_model"
-                   value="{{ config.linker.local_model }}"
+                   id="linker_localai_model"
+                   name="linker_localai_model"
+                   value="{{ config.linker.localai_model }}"
                    placeholder="mistral-7b-instruct"
+                   spellcheck="false">
+        </div>
+
+        <div class="settings-row settings-conditional" data-task="linker" data-backend="ollama">
+            <label class="settings-label" for="linker_ollama_model">OLLAMA MODEL</label>
+            <input class="settings-input"
+                   type="text"
+                   id="linker_ollama_model"
+                   name="linker_ollama_model"
+                   value="{{ config.linker.ollama_model }}"
+                   placeholder="gemma3:27b"
                    spellcheck="false">
         </div>
 
@@ -194,33 +250,39 @@
     if (checked) applyVisibility(task, checked.value);
   });
 
-  // ── Test LocalAI connection ─────────────────────────────────
-  var testBtn = document.getElementById('btn-test-localai');
-  var testResult = document.getElementById('localai-test-result');
+  // ── Test connection (LocalAI / Ollama) ──────────────────────
+  function wireTestButton(btnId, urlInputId, resultId, endpoint) {
+    var btn = document.getElementById(btnId);
+    var resultEl = document.getElementById(resultId);
+    if (!btn) return;
 
-  testBtn.addEventListener('click', async function () {
-    var url = document.getElementById('localai_base_url').value.trim();
-    testResult.textContent = 'CONNECTING...';
-    testResult.className = 'settings-test-result info';
-    try {
-      var res = await fetch('/settings/test-localai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base_url: url }),
-      });
-      var data = await res.json();
-      if (data.ok) {
-        testResult.textContent = 'CONNECTED — ' + data.models.length + ' model(s) available: ' + data.models.join(', ');
-        testResult.className = 'settings-test-result success';
-      } else {
-        testResult.textContent = 'ERROR: ' + data.error;
-        testResult.className = 'settings-test-result error';
+    btn.addEventListener('click', async function () {
+      var url = document.getElementById(urlInputId).value.trim();
+      resultEl.textContent = 'CONNECTING...';
+      resultEl.className = 'settings-test-result info';
+      try {
+        var res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base_url: url }),
+        });
+        var data = await res.json();
+        if (data.ok) {
+          resultEl.textContent = 'CONNECTED — ' + data.models.length + ' model(s) available: ' + data.models.join(', ');
+          resultEl.className = 'settings-test-result success';
+        } else {
+          resultEl.textContent = 'ERROR: ' + data.error;
+          resultEl.className = 'settings-test-result error';
+        }
+      } catch (err) {
+        resultEl.textContent = 'ERROR: ' + err.message;
+        resultEl.className = 'settings-test-result error';
       }
-    } catch (err) {
-      testResult.textContent = 'ERROR: ' + err.message;
-      testResult.className = 'settings-test-result error';
-    }
-  });
+    });
+  }
+
+  wireTestButton('btn-test-localai', 'localai_base_url', 'localai-test-result', '/settings/test-localai');
+  wireTestButton('btn-test-ollama', 'ollama_base_url', 'ollama-test-result', '/settings/test-ollama');
 
   // ── Save configuration ──────────────────────────────────────
   var saveBtn = document.getElementById('btn-save');
