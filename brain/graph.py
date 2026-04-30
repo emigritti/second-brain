@@ -164,7 +164,10 @@ class BrainGraph:
     def export_json(self) -> str:
         """Export the entire graph to JSON (Cytoscape.js compatible)."""
         with self._lock:
-            nodes = [{"data": {"id": n, **self.graph.nodes[n]}} for n in self.graph.nodes()]
+            nodes = [
+                {"data": {"id": n, "label": self.graph.nodes[n].get("title", n), **self.graph.nodes[n]}}
+                for n in self.graph.nodes()
+            ]
             edges = [{"data": {"source": u, "target": v, **d}} for u, v, d in self.graph.edges(data=True)]
 
         return json.dumps({

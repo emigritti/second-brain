@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from './client'
 
 interface GraphData {
-  nodes: { data: { id: string; label: string } }[]
+  nodes: { data: { id: string; label: string; title?: string; tags?: string[] } }[]
   edges: { data: { source: string; target: string; type?: string } }[]
 }
 
