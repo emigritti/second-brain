@@ -1,0 +1,7 @@
+{"type":"server-started","port":64403,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:64403","screen_dir":"/Users/emigritti/Projects/second-brain/.superpowers/brainstorm/61780-1777498643/content","state_dir":"/Users/emigritti/Projects/second-brain/.superpowers/brainstorm/61780-1777498643/state"}
+{"type":"screen-added","file":"/Users/emigritti/Projects/second-brain/.superpowers/brainstorm/61780-1777498643/content/frame.html"}
+{"type":"screen-updated","file":"/Users/emigritti/Projects/second-brain/.superpowers/brainstorm/61780-1777498643/content/frame.html"}
+{"type":"screen-updated","file":"/Users/emigritti/Projects/second-brain/.superpowers/brainstorm/61780-1777498643/content/frame.html"}
+{"type":"screen-updated","file":"/Users/emigritti/Projects/second-brain/.superpowers/brainstorm/61780-1777498643/content/frame.html"}
+{"type":"screen-updated","file":"/Users/emigritti/Projects/second-brain/.superpowers/brainstorm/61780-1777498643/content/frame.html"}
+{"type":"server-stopped","reason":"idle timeout"}

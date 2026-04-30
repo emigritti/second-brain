@@ -1,4 +1,21 @@
 services:
+  localai:
+    image: localai/localai:latest-aio-cpu
+    ports:
+      - "8080:8080"
+    volumes:
+      - localai-models:/build/models
+    environment:
+      - THREADS=4
+      - CONTEXT_SIZE=4096
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/readyz"]
+      interval: 15s
+      timeout: 10s
+      start_period: 90s
+      retries: 6
+
   brain:
     build: .
     image: second-brain:local
@@ -9,6 +26,8 @@ services:
     volumes:
       - brain-store:/app/store
       - brain-raw:/app/raw
+    depends_on:
+      - localai
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
@@ -20,3 +39,4 @@ services:
 volumes:
   brain-store:
   brain-raw:
+  localai-models:

@@ -7,28 +7,28 @@
 
 <form id="settings-form" class="settings-form" onsubmit="return false;">
 
-    <!-- ── Ollama connection ─────────────────────────── -->
+    <!-- ── LocalAI connection ────────────────────────── -->
     <section class="settings-section">
-        <h3 class="settings-section-title">OLLAMA CONNECTION</h3>
+        <h3 class="settings-section-title">LOCALAI CONNECTION</h3>
 
         <div class="settings-row">
-            <label class="settings-label" for="ollama_base_url">BASE URL</label>
+            <label class="settings-label" for="localai_base_url">BASE URL</label>
             <div class="settings-field-group">
                 <input class="settings-input"
                        type="text"
-                       id="ollama_base_url"
-                       name="ollama_base_url"
-                       value="{{ config.ollama_base_url }}"
-                       placeholder="http://localhost:11434"
+                       id="localai_base_url"
+                       name="localai_base_url"
+                       value="{{ config.localai_base_url }}"
+                       placeholder="http://localai:8080"
                        spellcheck="false"
                        autocomplete="off">
                 <button class="settings-btn settings-btn--secondary"
                         type="button"
-                        id="btn-test-ollama">TEST CONNECTION</button>
+                        id="btn-test-localai">TEST CONNECTION</button>
             </div>
         </div>
 
-        <div id="ollama-test-result" class="settings-test-result" aria-live="polite"></div>
+        <div id="localai-test-result" class="settings-test-result" aria-live="polite"></div>
     </section>
 
     <!-- ── Tagger ────────────────────────────────────── -->
@@ -46,9 +46,9 @@
                     <span>ANTHROPIC</span>
                 </label>
                 <label class="settings-radio-label">
-                    <input type="radio" name="tagger_backend" value="ollama"
-                           {% if config.tagger.backend == 'ollama' %}checked{% endif %}>
-                    <span>OLLAMA</span>
+                    <input type="radio" name="tagger_backend" value="localai"
+                           {% if config.tagger.backend == 'localai' %}checked{% endif %}>
+                    <span>LOCALAI</span>
                 </label>
             </div>
         </div>
@@ -64,14 +64,14 @@
                    spellcheck="false">
         </div>
 
-        <div class="settings-row settings-conditional" data-task="tagger" data-backend="ollama">
-            <label class="settings-label" for="tagger_ollama_model">OLLAMA MODEL</label>
+        <div class="settings-row settings-conditional" data-task="tagger" data-backend="localai">
+            <label class="settings-label" for="tagger_local_model">LOCAL MODEL</label>
             <input class="settings-input"
                    type="text"
-                   id="tagger_ollama_model"
-                   name="tagger_ollama_model"
-                   value="{{ config.tagger.ollama_model }}"
-                   placeholder="qwen2.5:7b"
+                   id="tagger_local_model"
+                   name="tagger_local_model"
+                   value="{{ config.tagger.local_model }}"
+                   placeholder="mistral-7b-instruct"
                    spellcheck="false">
         </div>
 
@@ -101,9 +101,9 @@
                     <span>ANTHROPIC</span>
                 </label>
                 <label class="settings-radio-label">
-                    <input type="radio" name="linker_backend" value="ollama"
-                           {% if config.linker.backend == 'ollama' %}checked{% endif %}>
-                    <span>OLLAMA</span>
+                    <input type="radio" name="linker_backend" value="localai"
+                           {% if config.linker.backend == 'localai' %}checked{% endif %}>
+                    <span>LOCALAI</span>
                 </label>
             </div>
         </div>
@@ -119,14 +119,14 @@
                    spellcheck="false">
         </div>
 
-        <div class="settings-row settings-conditional" data-task="linker" data-backend="ollama">
-            <label class="settings-label" for="linker_ollama_model">OLLAMA MODEL</label>
+        <div class="settings-row settings-conditional" data-task="linker" data-backend="localai">
+            <label class="settings-label" for="linker_local_model">LOCAL MODEL</label>
             <input class="settings-input"
                    type="text"
-                   id="linker_ollama_model"
-                   name="linker_ollama_model"
-                   value="{{ config.linker.ollama_model }}"
-                   placeholder="gemma3:27b"
+                   id="linker_local_model"
+                   name="linker_local_model"
+                   value="{{ config.linker.local_model }}"
+                   placeholder="mistral-7b-instruct"
                    spellcheck="false">
         </div>
 
@@ -194,16 +194,16 @@
     if (checked) applyVisibility(task, checked.value);
   });
 
-  // ── Test Ollama connection ──────────────────────────────────
-  var testBtn = document.getElementById('btn-test-ollama');
-  var testResult = document.getElementById('ollama-test-result');
+  // ── Test LocalAI connection ─────────────────────────────────
+  var testBtn = document.getElementById('btn-test-localai');
+  var testResult = document.getElementById('localai-test-result');
 
   testBtn.addEventListener('click', async function () {
-    var url = document.getElementById('ollama_base_url').value.trim();
+    var url = document.getElementById('localai_base_url').value.trim();
     testResult.textContent = 'CONNECTING...';
     testResult.className = 'settings-test-result info';
     try {
-      var res = await fetch('/settings/test-ollama', {
+      var res = await fetch('/settings/test-localai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base_url: url }),

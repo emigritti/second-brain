@@ -7,16 +7,16 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(_PROJECT_ROOT, "store", "config.json")
 
 DEFAULT_CONFIG: dict = {
-    "ollama_base_url": "http://localhost:11434",
+    "localai_base_url": "http://localai:8080",
     "tagger": {
         "backend": "anthropic",
-        "ollama_model": "qwen2.5:7b",
+        "local_model": "mistral-7b-instruct",
         "anthropic_model": "claude-haiku-4-5",
         "temperature": 0.2,
     },
     "linker": {
         "backend": "anthropic",
-        "ollama_model": "gemma3:27b",
+        "local_model": "mistral-7b-instruct",
         "anthropic_model": "claude-sonnet-4-6",
         "temperature": 0.3,
     },
@@ -66,10 +66,10 @@ def chat(
     backend = task_cfg["backend"]
     temperature = float(task_cfg.get("temperature", 0.3))
 
-    if backend == "ollama":
-        result = _ollama_chat(
-            base_url=config["ollama_base_url"],
-            model=task_cfg["ollama_model"],
+    if backend == "localai":
+        result = _localai_chat(
+            base_url=config["localai_base_url"],
+            model=task_cfg["local_model"],
             system=system,
             user=user,
             max_tokens=max_tokens,
@@ -78,8 +78,8 @@ def chat(
         if result is not None:
             return result
         msg = (
-            f"Ollama unavailable for '{task}' "
-            f"(model: {task_cfg['ollama_model']}), "
+            f"LocalAI unavailable for '{task}' "
+            f"(model: {task_cfg['local_model']}), "
             f"falling back to Anthropic ({task_cfg['anthropic_model']})"
         )
         print(f"[llm] {msg}")
@@ -94,14 +94,14 @@ def chat(
     )
 
 
-def list_ollama_models(base_url: str) -> list[str]:
-    import ollama  # lazy import — optional dependency
-    client = ollama.Client(host=base_url)
-    response = client.list()
-    return [m.model for m in response.models]
+def list_localai_models(base_url: str) -> list[str]:
+    from openai import OpenAI
+    client = OpenAI(base_url=f"{base_url.rstrip('/')}/v1", api_key="none")
+    response = client.models.list()
+    return [m.id for m in response.data]
 
 
-def _ollama_chat(
+def _localai_chat(
     base_url: str,
     model: str,
     system: str,
@@ -110,24 +110,25 @@ def _ollama_chat(
     temperature: float,
 ) -> str | None:
     try:
-        import ollama  # lazy import — optional dependency
-        client = ollama.Client(host=base_url)
-        response = client.chat(
+        from openai import OpenAI
+        client = OpenAI(base_url=f"{base_url.rstrip('/')}/v1", api_key="none")
+        response = client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            options={"num_predict": max_tokens, "temperature": temperature},
+            max_tokens=max_tokens,
+            temperature=temperature,
         )
-        return response.message.content.strip()
+        return response.choices[0].message.content.strip()
     except Exception as e:
-        print(f"[llm] Ollama error: {e}")
+        print(f"[llm] LocalAI error: {e}")
         return None
 
 
 def _anthropic_chat(model: str, system: str, user: str, max_tokens: int) -> str:
-    from anthropic import Anthropic  # lazy import — may not be needed if Ollama is used
+    from anthropic import Anthropic
     client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
     response = client.messages.create(
         model=model,

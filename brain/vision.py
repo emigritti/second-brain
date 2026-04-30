@@ -3,6 +3,14 @@ import base64
 from anthropic import Anthropic
 from typing import List, Dict
 
+_MEDIA_TYPES = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+}
+
 # Assumes ANTHROPIC_API_KEY is set in the environment (.env)
 client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
@@ -41,7 +49,7 @@ def describe_images(image_paths: List[str], slug: str) -> Dict[str, str]:
                                 "type": "image",
                                 "source": {
                                     "type": "base64",
-                                    "media_type": "image/png",
+                                    "media_type": _MEDIA_TYPES.get(os.path.splitext(path)[1].lower(), "image/png"),
                                     "data": base64_image
                                 }
                             },

@@ -8,3 +8,5 @@ __pycache__/
 store/
 raw/
 .worktrees/
+node_modules/
+frontend/dist/

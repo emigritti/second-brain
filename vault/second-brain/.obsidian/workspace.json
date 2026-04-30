@@ -22,22 +22,6 @@
             }
           }
         ]
-      },
-      {
-        "id": "2a4b3176c2d056b9",
-        "type": "tabs",
-        "children": [
-          {
-            "id": "7ac6152db726a62e",
-            "type": "leaf",
-            "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Vista grafo"
-            }
-          }
-        ]
       }
     ],
     "direction": "vertical"
@@ -201,6 +185,7 @@
   },
   "active": "9358746f75b56a74",
   "lastOpenFiles": [
+    "2026-04-29.md",
     "Benvenuto.md"
   ]
 }

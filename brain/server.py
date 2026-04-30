@@ -116,16 +116,16 @@ async def save_settings(request: Request):
     form = await request.form()
     try:
         config = {
-            "ollama_base_url": str(form.get("ollama_base_url", llm.DEFAULT_CONFIG["ollama_base_url"])).strip(),
+            "localai_base_url": str(form.get("localai_base_url", llm.DEFAULT_CONFIG["localai_base_url"])).strip(),
             "tagger": {
                 "backend": str(form.get("tagger_backend", "anthropic")),
-                "ollama_model": str(form.get("tagger_ollama_model", llm.DEFAULT_CONFIG["tagger"]["ollama_model"])).strip(),
+                "local_model": str(form.get("tagger_local_model", llm.DEFAULT_CONFIG["tagger"]["local_model"])).strip(),
                 "anthropic_model": str(form.get("tagger_anthropic_model", llm.DEFAULT_CONFIG["tagger"]["anthropic_model"])).strip(),
                 "temperature": float(form.get("tagger_temperature", llm.DEFAULT_CONFIG["tagger"]["temperature"])),
             },
             "linker": {
                 "backend": str(form.get("linker_backend", "anthropic")),
-                "ollama_model": str(form.get("linker_ollama_model", llm.DEFAULT_CONFIG["linker"]["ollama_model"])).strip(),
+                "local_model": str(form.get("linker_local_model", llm.DEFAULT_CONFIG["linker"]["local_model"])).strip(),
                 "anthropic_model": str(form.get("linker_anthropic_model", llm.DEFAULT_CONFIG["linker"]["anthropic_model"])).strip(),
                 "temperature": float(form.get("linker_temperature", llm.DEFAULT_CONFIG["linker"]["temperature"])),
             },
@@ -136,13 +136,13 @@ async def save_settings(request: Request):
         return JSONResponse(status_code=400, content={"error": f"Invalid value: {e}"})
 
 
-@app.post("/settings/test-ollama")
-async def test_ollama_connection(request: Request):
-    """Ping Ollama and return available model names."""
+@app.post("/settings/test-localai")
+async def test_localai_connection(request: Request):
+    """Ping LocalAI and return available model names."""
     data = await request.json()
-    base_url = str(data.get("base_url", "http://localhost:11434")).strip()
+    base_url = str(data.get("base_url", llm.DEFAULT_CONFIG["localai_base_url"])).strip()
     try:
-        models = llm.list_ollama_models(base_url)
+        models = llm.list_localai_models(base_url)
         return JSONResponse({"ok": True, "models": models})
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)})
