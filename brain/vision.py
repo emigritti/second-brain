@@ -2,6 +2,8 @@ import os
 import base64
 from typing import List, Dict
 
+from brain import llm
+
 _MEDIA_TYPES = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
@@ -28,6 +30,10 @@ def describe_images(image_paths: List[str], slug: str) -> Dict[str, str]:
     Returns:
         A dictionary mapping image_path -> generated description.
     """
+    config = llm.load_config()
+    if not config.get("vision_enabled", True):
+        return {}
+
     from anthropic import Anthropic
     client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
     results = {}
