@@ -1,3 +1,12 @@
+# ── Stage 1: build React frontend ─────────────────────────────────────
+FROM node:22-alpine AS frontend-build
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# ── Stage 2: Python runtime ───────────────────────────────────────────
 FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -22,11 +31,11 @@ COPY brain/ brain/
 COPY static/ static/
 COPY templates/ templates/
 
+COPY --from=frontend-build /app/frontend/dist /app/frontend/dist
+
 RUN mkdir -p raw store/documents store/images store/chroma
 
-# Pre-download the ChromaDB ONNX embedding model at build time
-# so it's baked into the image and never downloaded at runtime
-RUN python -c "from chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2 import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()([ 'warmup'])"
+RUN python -c "from chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2 import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()(['warmup'])"
 
 EXPOSE 8000
 
