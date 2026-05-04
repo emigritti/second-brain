@@ -135,6 +135,30 @@ async def view_document(request: Request, slug: str):
         "content_html": content_html,
     })
 
+@api.get("/documents")
+async def list_documents():
+    """Return metadata for all non-dangling documents."""
+    with brain_graph._lock:
+        nodes = []
+        for slug, data in brain_graph.graph.nodes(data=True):
+            if data.get("is_dangling"):
+                continue
+            # Count edges by type
+            edge_counts = {"wikilink": 0, "tag": 0, "semantic": 0}
+            for _, _, edata in brain_graph.graph.edges(slug, data=True):
+                etype = edata.get("type", "wikilink")
+                edge_counts[etype] = edge_counts.get(etype, 0) + 1
+            nodes.append({
+                "slug": slug,
+                "title": data.get("title", slug),
+                "tags": data.get("tags", []),
+                "semantic_links": data.get("semantic_links", []),
+                "edges": edge_counts,
+            })
+    nodes.sort(key=lambda n: n["title"].lower())
+    return JSONResponse(content={"documents": nodes})
+
+
 @api.get("/settings")
 async def get_settings():
     """Return current LLM configuration."""

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as GraphRouteImport } from './routes/graph'
+import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocSlugRouteImport } from './routes/doc.$slug'
 
@@ -30,6 +31,11 @@ const GraphRoute = GraphRouteImport.update({
   path: '/graph',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocumentsRoute = DocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const DocSlugRoute = DocSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/documents': typeof DocumentsRoute
   '/graph': typeof GraphRoute
   '/settings': typeof SettingsRoute
   '/upload': typeof UploadRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/documents': typeof DocumentsRoute
   '/graph': typeof GraphRoute
   '/settings': typeof SettingsRoute
   '/upload': typeof UploadRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/documents': typeof DocumentsRoute
   '/graph': typeof GraphRoute
   '/settings': typeof SettingsRoute
   '/upload': typeof UploadRoute
@@ -65,14 +74,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/graph' | '/settings' | '/upload' | '/doc/$slug'
+  fullPaths:
+    | '/'
+    | '/documents'
+    | '/graph'
+    | '/settings'
+    | '/upload'
+    | '/doc/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/graph' | '/settings' | '/upload' | '/doc/$slug'
-  id: '__root__' | '/' | '/graph' | '/settings' | '/upload' | '/doc/$slug'
+  to: '/' | '/documents' | '/graph' | '/settings' | '/upload' | '/doc/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/documents'
+    | '/graph'
+    | '/settings'
+    | '/upload'
+    | '/doc/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DocumentsRoute: typeof DocumentsRoute
   GraphRoute: typeof GraphRoute
   SettingsRoute: typeof SettingsRoute
   UploadRoute: typeof UploadRoute
@@ -102,6 +125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GraphRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/documents': {
+      id: '/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof DocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -121,6 +151,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DocumentsRoute: DocumentsRoute,
   GraphRoute: GraphRoute,
   SettingsRoute: SettingsRoute,
   UploadRoute: UploadRoute,
