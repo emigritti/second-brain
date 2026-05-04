@@ -21,10 +21,13 @@ DOCS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'store'
 INGEST_LOG: deque = deque(maxlen=50)
 
 
-def ingest_document(file_path: str, brain_graph: BrainGraph, brain_index: BrainIndex):
+def ingest_document(file_path: str, brain_graph: BrainGraph, brain_index: BrainIndex, skip_api_calls: bool = False):
     """
     Run the full ingestion pipeline on any supported document format.
     parser -> vision (PDF only) -> tagger -> linker -> index -> graph
+
+    Args:
+        skip_api_calls: If True, skip all Anthropic API calls (vision, tagger, linker).
     """
     slug = os.path.splitext(os.path.basename(file_path))[0]
     warnings: list[dict] = []
@@ -36,7 +39,7 @@ def ingest_document(file_path: str, brain_graph: BrainGraph, brain_index: BrainI
     markdown_text, image_paths = parse_document(file_path, slug)
 
     # 2. Vision (if images were extracted)
-    if image_paths:
+    if image_paths and not skip_api_calls:
         print(f"[{slug}] Describing {len(image_paths)} images via Claude Vision...")
         descriptions = describe_images(image_paths, slug)
         if descriptions:
@@ -46,16 +49,22 @@ def ingest_document(file_path: str, brain_graph: BrainGraph, brain_index: BrainI
                 markdown_text += f"**{img_name}**:\n> {desc}\n\n"
 
     # 3. Tagger
-    print(f"[{slug}] Generating tags...")
-    tags = extract_tags(markdown_text)
-    warnings.extend(llm.pop_warnings())
+    if skip_api_calls:
+        tags = []
+    else:
+        print(f"[{slug}] Generating tags...")
+        tags = extract_tags(markdown_text)
+        warnings.extend(llm.pop_warnings())
     print(f"[{slug}] Tags: {tags}")
 
     # 4. Linker
-    print(f"[{slug}] Injecting wikilinks...")
     existing_slugs = [n for n in brain_graph.graph.nodes() if n != slug]
-    final_markdown = inject_wikilinks(slug, markdown_text, existing_slugs)
-    warnings.extend(llm.pop_warnings())
+    if skip_api_calls:
+        final_markdown = markdown_text
+    else:
+        print(f"[{slug}] Injecting wikilinks...")
+        final_markdown = inject_wikilinks(slug, markdown_text, existing_slugs)
+        warnings.extend(llm.pop_warnings())
 
     # 5. Graph Upsert (saves to file, updates NetworkX)
     print(f"[{slug}] Saving to store and updating knowledge graph...")
