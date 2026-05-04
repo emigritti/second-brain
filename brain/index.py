@@ -90,7 +90,7 @@ class BrainIndex:
             where={"slug": slug},
             include=["embeddings"]
         )
-        if not own_chunks["embeddings"]:
+        if own_chunks["embeddings"] is None or len(own_chunks["embeddings"]) == 0:
             return []
 
         # Query for similar chunks across all docs, aggregate by document
