@@ -20,7 +20,7 @@ export function UploadPage() {
       </h1>
 
       <DropZone
-        onFile={(file) => upload.mutate(file)}
+        onFile={(file) => upload.mutate({ file, skipApi: false })}
         isPending={upload.isPending}
       />
 

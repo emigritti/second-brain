@@ -4,10 +4,10 @@ import { apiFetch } from './client'
 export function useUpload() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (file: File) => {
+    mutationFn: ({ file, skipApi }: { file: File; skipApi: boolean }) => {
       const form = new FormData()
       form.append('file', file)
-      return apiFetch<{ filename: string; status: string }>('/upload', {
+      return apiFetch<{ filename: string; status: string }>(`/upload?skip_api=${skipApi}`, {
         method: 'POST',
         body: form,
       })

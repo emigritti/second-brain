@@ -35,7 +35,7 @@ export function SearchPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (query.trim()) ask.mutate(query.trim())
+    if (query.trim()) ask.mutate({ query: query.trim() })
   }
 
   return (
@@ -75,7 +75,7 @@ export function SearchPage() {
         )}
 
         {ask.data && (
-          <AnswerCard answer={ask.data.answer} sources={ask.data.sources} />
+          <AnswerCard answer={ask.data.answer ?? ''} sources={ask.data.sources ?? []} />
         )}
 
         {!ask.data && !ask.isPending && (
