@@ -7,7 +7,7 @@ from brain import llm
 
 client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
-QUERY_CONFIDENCE_THRESHOLD = 0.72
+QUERY_CONFIDENCE_THRESHOLD = float(os.environ.get("QUERY_CONFIDENCE_THRESHOLD", "0.72"))
 
 class QueryEngine:
     def __init__(self, search: BrainSearch):
@@ -47,6 +47,24 @@ class QueryEngine:
         try:
             if avg_confidence >= QUERY_CONFIDENCE_THRESHOLD:
                 # High confidence: answer strictly from context using Haiku (faster, cheaper)
+                local_summary = (
+                    "I found relevant information in your Second Brain. "
+                    "Enable API access for a synthesized answer."
+                )
+
+                if not query_escalation_enabled:
+                    print("Escalation disabled. Returning local summary.")
+                    return local_summary, cited_slugs
+
+                if anthropic_require_approval and not allow_escalation:
+                    print("Escalation requires approval. Returning needs_escalation response.")
+                    return {
+                        "needs_escalation": True,
+                        "local_answer": local_summary,
+                        "confidence": avg_confidence,
+                        "sources": cited_slugs,
+                    }
+
                 print("High confidence. Using Haiku to summarize context.")
                 response = client.messages.create(
                     model="claude-haiku-4-5",
