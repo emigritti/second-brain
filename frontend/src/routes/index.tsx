@@ -31,12 +31,21 @@ function EmptyState() {
 
 export function SearchPage() {
   const [query, setQuery] = useState('')
+  const [lastQuery, setLastQuery] = useState('')
+  const [acceptedAnswer, setAcceptedAnswer] = useState<{ answer: string; sources: string[] } | null>(null)
   const ask = useAsk()
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (query.trim()) ask.mutate({ query: query.trim() })
+    if (query.trim()) {
+      setLastQuery(query.trim())
+      setAcceptedAnswer(null)
+      ask.mutate({ query: query.trim() })
+    }
   }
+
+  const showEscalationCard = ask.data?.needs_escalation === true && acceptedAnswer === null
+  const displayAnswer = acceptedAnswer ?? (ask.data?.needs_escalation ? null : ask.data)
 
   return (
     <motion.div
@@ -74,11 +83,46 @@ export function SearchPage() {
           </p>
         )}
 
-        {ask.data && (
-          <AnswerCard answer={ask.data.answer ?? ''} sources={ask.data.sources ?? []} />
+        {showEscalationCard && (
+          <div className="mb-4 bg-amber-950/30 border border-amber-700/50 rounded-lg px-4 py-3">
+            <p className="mb-2 text-sm font-medium text-amber-200">
+              Risposta locale (confidenza: {Math.round((ask.data!.confidence ?? 0) * 100)}%)
+            </p>
+            <p className="mb-4 text-sm text-slate-300">
+              {(ask.data!.local_answer ?? '').length > 200
+                ? (ask.data!.local_answer ?? '').slice(0, 200) + '…'
+                : (ask.data!.local_answer ?? '')}
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() =>
+                  setAcceptedAnswer({
+                    answer: ask.data!.local_answer ?? '',
+                    sources: ask.data!.sources ?? [],
+                  })
+                }
+                className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                Usa questa risposta
+              </button>
+              <button
+                onClick={() => {
+                  setAcceptedAnswer(null)
+                  ask.mutate({ query: lastQuery, allowEscalation: true })
+                }}
+                className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                Escalare a Claude API →
+              </button>
+            </div>
+          </div>
         )}
 
-        {!ask.data && !ask.isPending && (
+        {displayAnswer && (
+          <AnswerCard answer={displayAnswer.answer ?? ''} sources={displayAnswer.sources ?? []} />
+        )}
+
+        {!ask.data && !acceptedAnswer && !ask.isPending && (
           <EmptyState />
         )}
       </div>
