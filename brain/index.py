@@ -75,6 +75,49 @@ class BrainIndex:
                 
         return formatted_results
 
+    def get_similar_documents(self, slug: str, min_similarity: float = 0.75, limit: int = 10) -> list[tuple[str, float]]:
+        """
+        Find documents semantically similar to the given slug.
+        Returns [(other_slug, similarity_score)] sorted by similarity desc.
+        Uses L2 distance from ChromaDB (all-MiniLM-L6-v2 outputs normalized vectors,
+        so cosine_similarity = 1 - (l2_distance^2 / 2)).
+        """
+        if self.collection.count() < 2:
+            return []
+
+        # Get embeddings for all chunks of this slug
+        own_chunks = self.collection.get(
+            where={"slug": slug},
+            include=["embeddings"]
+        )
+        if not own_chunks["embeddings"]:
+            return []
+
+        # Query for similar chunks across all docs, aggregate by document
+        doc_scores: dict[str, float] = {}
+        n_results = min(50, self.collection.count())
+
+        for embedding in own_chunks["embeddings"]:
+            results = self.collection.query(
+                query_embeddings=[embedding],
+                n_results=n_results,
+                include=["metadatas", "distances"]
+            )
+            for meta, dist in zip(results["metadatas"][0], results["distances"][0]):
+                other_slug = meta["slug"]
+                if other_slug == slug:
+                    continue
+                # L2 distance to cosine similarity (valid for normalized vectors)
+                similarity = max(0.0, 1.0 - (dist ** 2) / 2.0)
+                if other_slug not in doc_scores or similarity > doc_scores[other_slug]:
+                    doc_scores[other_slug] = similarity
+
+        return sorted(
+            [(s, score) for s, score in doc_scores.items() if score >= min_similarity],
+            key=lambda x: x[1],
+            reverse=True
+        )[:limit]
+
     def rebuild(self, documents_dir: str):
         """Drop collection and re-embed all documents in the directory."""
         try:

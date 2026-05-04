@@ -74,6 +74,15 @@ def ingest_document(file_path: str, brain_graph: BrainGraph, brain_index: BrainI
     print(f"[{slug}] Adding to vector index...")
     brain_index.add_document(slug, final_markdown)
 
+    # 7. Semantic edges
+    print(f"[{slug}] Computing semantic similarity with existing documents...")
+    similar = brain_index.get_similar_documents(slug)
+    if similar:
+        brain_graph.update_semantic_links(slug, [s for s, _ in similar])
+        print(f"[{slug}] Linked to {len(similar)} semantically similar documents.")
+    else:
+        print(f"[{slug}] No semantic neighbors found above threshold.")
+
     INGEST_LOG.appendleft({
         "slug": slug,
         "ts": datetime.now().isoformat(timespec="seconds"),
