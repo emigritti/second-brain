@@ -53,7 +53,8 @@
       "Bash(npx tsr *)",
       "Bash(node_modules/@tanstack/router-plugin/bin/router-plugin.js generate *)",
       "Bash(node node_modules/@tanstack/router-plugin/bin/intent.js generate)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git -C C:/Project/second-brain log --oneline -10)"
     ]
   }
 }
