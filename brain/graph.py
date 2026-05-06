@@ -80,15 +80,61 @@ class BrainGraph:
                     # Here we assume the link directly matches the slug
                     # A more robust version would check titles or fuzzy match
                     target_slug = link
-                    
+
                     # If target node doesn't exist, we might create a placeholder node
                     # This represents a dangling link (a page not yet created)
                     if not self.graph.has_node(target_slug):
                         self.graph.add_node(target_slug, title=target_slug, path=None, tags=[], is_dangling=True)
-                        
+
                     self.graph.add_edge(slug, target_slug, type='wikilink', weight=1.0)
+
+                # Semantic links stored in frontmatter
+                semantic_links = post.get("semantic_links", [])
+                if isinstance(semantic_links, str):
+                    semantic_links = [s.strip() for s in semantic_links.split(",") if s.strip()]
+                for target in semantic_links:
+                    if not self.graph.has_node(target):
+                        self.graph.add_node(target, title=target, path=None, tags=[], is_dangling=True)
+                    self.graph.add_edge(slug, target, type="semantic", weight=0.7)
+                    self.graph.add_edge(target, slug, type="semantic", weight=0.7)  # bidirectional
             except Exception as e:
                 print(f"Error extracting links from {path}: {e}")
+
+        # Third pass: tag edges between documents sharing tags
+        try:
+            tag_to_slugs: dict[str, list] = {}
+            for node, data in self.graph.nodes(data=True):
+                if data.get("is_dangling"):
+                    continue
+                for tag in data.get("tags", []):
+                    tag_to_slugs.setdefault(tag, []).append(node)
+
+            for tag, slugs in tag_to_slugs.items():
+                for i, a in enumerate(slugs):
+                    for b in slugs[i + 1:]:
+                        if not self.graph.has_edge(a, b):
+                            self.graph.add_edge(a, b, type="tag", weight=0.5, tag=tag)
+                        if not self.graph.has_edge(b, a):
+                            self.graph.add_edge(b, a, type="tag", weight=0.5, tag=tag)
+        except Exception as e:
+            print(f"Error building tag edges: {e}")
+
+    def update_semantic_links(self, slug: str, linked_slugs: list):
+        """Persist semantic links to the document's frontmatter and refresh the graph."""
+        path = os.path.join(self.store_dir, f"{slug}.md")
+        if not os.path.exists(path):
+            return
+        with open(path, "r", encoding="utf-8") as f:
+            post = frontmatter.load(f)
+        existing = post.get("semantic_links", [])
+        if isinstance(existing, str):
+            existing = [s.strip() for s in existing.split(",") if s.strip()]
+        merged = list(dict.fromkeys(existing + linked_slugs))  # deduplicate preserving order
+        post["semantic_links"] = merged
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(frontmatter.dumps(post))
+        with self._lock:
+            self._load_from_files_locked()
 
     def upsert_document(self, slug: str, title: str, text: str, tags: List[str]):
         """Upsert a document: write to a .md file and update the graph."""

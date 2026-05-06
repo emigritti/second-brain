@@ -14,6 +14,10 @@ export interface SettingsData {
   ollama_base_url: string
   tagger: TaskConfig
   linker: TaskConfig
+  anthropic_require_approval: boolean
+  anthropic_fallback_enabled: boolean
+  vision_enabled: boolean
+  query_escalation_enabled: boolean
 }
 
 export function useSettings() {

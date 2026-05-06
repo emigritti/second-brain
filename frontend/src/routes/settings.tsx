@@ -10,6 +10,43 @@ import {
 } from '../api/useSettings'
 import { pageVariants } from '../lib/motion'
 
+function Toggle({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string
+  description?: string
+  checked: boolean
+  onChange: (v: boolean) => void
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 group">
+      <div className="relative mt-0.5">
+        <input
+          type="checkbox"
+          className="sr-only"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+        />
+        <div
+          className={`h-5 w-10 rounded-full transition-colors ${checked ? 'bg-indigo-500' : 'bg-slate-700'}`}
+        />
+        <div
+          className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : ''}`}
+        />
+      </div>
+      <div>
+        <div className="text-sm font-medium text-slate-200">{label}</div>
+        {description && (
+          <div className="mt-0.5 text-xs text-slate-400">{description}</div>
+        )}
+      </div>
+    </label>
+  )
+}
+
 function BackendToggle({
   name,
   label,
@@ -216,6 +253,10 @@ export function SettingsPage() {
   const [ollamaUrl, setOllamaUrl] = useState('')
   const [tagger, setTagger] = useState<TaskConfig | null>(null)
   const [linker, setLinker] = useState<TaskConfig | null>(null)
+  const [anthropicRequireApproval, setAnthropicRequireApproval] = useState(false)
+  const [anthropicFallbackEnabled, setAnthropicFallbackEnabled] = useState(true)
+  const [visionEnabled, setVisionEnabled] = useState(true)
+  const [queryEscalationEnabled, setQueryEscalationEnabled] = useState(true)
 
   useEffect(() => {
     if (data) {
@@ -223,6 +264,10 @@ export function SettingsPage() {
       setOllamaUrl(data.ollama_base_url)
       setTagger(data.tagger)
       setLinker(data.linker)
+      setAnthropicRequireApproval(data.anthropic_require_approval ?? false)
+      setAnthropicFallbackEnabled(data.anthropic_fallback_enabled ?? true)
+      setVisionEnabled(data.vision_enabled ?? true)
+      setQueryEscalationEnabled(data.query_escalation_enabled ?? true)
     }
   }, [data])
 
@@ -241,6 +286,10 @@ export function SettingsPage() {
     form.set('linker_localai_model', linker.localai_model)
     form.set('linker_ollama_model', linker.ollama_model)
     form.set('linker_temperature', String(linker.temperature))
+    form.set('anthropic_require_approval', String(anthropicRequireApproval))
+    form.set('anthropic_fallback_enabled', String(anthropicFallbackEnabled))
+    form.set('vision_enabled', String(visionEnabled))
+    form.set('query_escalation_enabled', String(queryEscalationEnabled))
     save.mutate(form)
   }
 
@@ -260,6 +309,34 @@ export function SettingsPage() {
       </h1>
 
       <div className="flex flex-col gap-4">
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 className="mb-4 text-sm font-semibold text-slate-900">
+            Controllo API Anthropic
+          </h3>
+          <div className="flex flex-col gap-4">
+            <Toggle
+              label="Richiedi approvazione prima di ogni chiamata Anthropic"
+              checked={anthropicRequireApproval}
+              onChange={setAnthropicRequireApproval}
+            />
+            <Toggle
+              label="Abilita fallback automatico ad Anthropic se LocalAI/Ollama fallisce"
+              checked={anthropicFallbackEnabled}
+              onChange={setAnthropicFallbackEnabled}
+            />
+            <Toggle
+              label="Abilita descrizione immagini (Vision)"
+              checked={visionEnabled}
+              onChange={setVisionEnabled}
+            />
+            <Toggle
+              label="Abilita escalation query a Claude API"
+              checked={queryEscalationEnabled}
+              onChange={setQueryEscalationEnabled}
+            />
+          </div>
+        </section>
+
         <ConnectionSection
           title="LocalAI Connection"
           urlValue={localaiUrl}

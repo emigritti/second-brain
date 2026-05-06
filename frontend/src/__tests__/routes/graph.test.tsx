@@ -3,14 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GraphPage } from '../../routes/graph'
 
-vi.mock('../../components/CytoscapeGraph', () => ({
-  CytoscapeGraph: ({
+vi.mock('../../components/ForceGraph', () => ({
+  ForceGraph: ({
     elements,
   }: {
     elements: unknown[]
     onNodeClick?: (slug: string) => void
   }) => (
-    <div data-testid="cytoscape-graph" data-count={elements.length} />
+    <div data-testid="force-graph" data-count={elements.length} />
   ),
 }))
 
@@ -40,7 +40,7 @@ describe('GraphPage', () => {
   it('renders graph after data loads', async () => {
     render(<GraphPage />, { wrapper })
     await waitFor(() => {
-      expect(screen.getByTestId('cytoscape-graph')).toBeInTheDocument()
+      expect(screen.getByTestId('force-graph')).toBeInTheDocument()
     })
   })
 })

@@ -57,12 +57,17 @@ api = APIRouter(prefix="/api")
 
 class QueryRequest(BaseModel):
     query: str
+    allow_escalation: bool = False
 
 @api.post("/query")
 async def handle_query(req: QueryRequest):
     """Accepts question, returns answer + sources (JSON)."""
-    answer, sources = query_engine.query(req.query)
-    return JSONResponse(content={"answer": answer, "sources": sources})
+    result = query_engine.query(req.query, allow_escalation=req.allow_escalation)
+    if isinstance(result, dict) and result.get("needs_escalation"):
+        return JSONResponse(content=result)
+    else:
+        answer, sources = result
+        return JSONResponse(content={"answer": answer, "sources": sources})
 
 @api.get("/graph/data")
 async def graph_data():
@@ -130,6 +135,30 @@ async def view_document(request: Request, slug: str):
         "content_html": content_html,
     })
 
+@api.get("/documents")
+async def list_documents():
+    """Return metadata for all non-dangling documents."""
+    with brain_graph._lock:
+        nodes = []
+        for slug, data in brain_graph.graph.nodes(data=True):
+            if data.get("is_dangling"):
+                continue
+            # Count edges by type
+            edge_counts = {"wikilink": 0, "tag": 0, "semantic": 0}
+            for _, _, edata in brain_graph.graph.edges(slug, data=True):
+                etype = edata.get("type", "wikilink")
+                edge_counts[etype] = edge_counts.get(etype, 0) + 1
+            nodes.append({
+                "slug": slug,
+                "title": data.get("title", slug),
+                "tags": data.get("tags", []),
+                "semantic_links": data.get("semantic_links", []),
+                "edges": edge_counts,
+            })
+    nodes.sort(key=lambda n: n["title"].lower())
+    return JSONResponse(content={"documents": nodes})
+
+
 @api.get("/settings")
 async def get_settings():
     """Return current LLM configuration."""
@@ -159,6 +188,10 @@ async def save_settings(request: Request):
                 "temperature": float(form.get("linker_temperature", llm.DEFAULT_CONFIG["linker"]["temperature"])),
             },
         }
+        config["anthropic_require_approval"] = form.get("anthropic_require_approval", "false").lower() == "true"
+        config["anthropic_fallback_enabled"] = form.get("anthropic_fallback_enabled", "true").lower() == "true"
+        config["vision_enabled"] = form.get("vision_enabled", "true").lower() == "true"
+        config["query_escalation_enabled"] = form.get("query_escalation_enabled", "true").lower() == "true"
         llm.save_config(config)
         return JSONResponse({"status": "saved"})
     except (ValueError, TypeError) as e:
@@ -196,7 +229,7 @@ async def ingest_log():
 
 
 @api.post("/upload")
-async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File(...), skip_api: bool = False):
     """Save uploaded file to raw/, trigger ingest in background, return status."""
     safe_name = os.path.basename(file.filename or "")
     ext = os.path.splitext(safe_name)[1].lower()
@@ -212,7 +245,7 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    background_tasks.add_task(ingest_document, file_path, brain_graph, brain_index)
+    background_tasks.add_task(ingest_document, file_path, brain_graph, brain_index, skip_api_calls=skip_api)
 
     return {"filename": file.filename, "status": "Ingestion started in background"}
 

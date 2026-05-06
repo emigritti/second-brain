@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import { useCallback } from 'react'
 import { useGraphData } from '../api/useGraphData'
-import { CytoscapeGraph } from '../components/CytoscapeGraph'
+import { ForceGraph } from '../components/ForceGraph'
 import { pageVariants } from '../lib/motion'
 
 export function GraphPage() {
@@ -40,7 +40,7 @@ export function GraphPage() {
       animate="animate"
       exit="exit"
     >
-      <CytoscapeGraph elements={elements} onNodeClick={handleNodeClick} />
+      <ForceGraph elements={elements} onNodeClick={handleNodeClick} />
     </motion.div>
   )
 }

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 const NAV_LINKS = [
   { to: '/', label: 'Search' },
   { to: '/graph', label: 'Graph' },
+  { to: '/documents', label: 'Documents' },
   { to: '/upload', label: 'Upload' },
   { to: '/settings', label: 'Settings' },
 ]
